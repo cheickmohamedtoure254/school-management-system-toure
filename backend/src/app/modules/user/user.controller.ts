@@ -125,10 +125,11 @@ const login = catchAsync(async (req: Request, res: Response) => {
   const result = await userService.login(req.body);
 
   // Set httpOnly cookie for authentication
+  // For cross-domain (Netlify + Render), we need sameSite: 'none' and secure: true
   res.cookie('token', result.accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: true, // Always true for cross-domain cookies (requires HTTPS)
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for cross-domain in production
     expires: result.tokenExpires,
     path: '/',
   });
@@ -146,11 +147,11 @@ const login = catchAsync(async (req: Request, res: Response) => {
 });
 
 const logout = catchAsync(async (req: Request, res: Response) => {
-  // Clear authentication cookie
+  // Clear authentication cookie - must match the same settings as when it was set
   res.clearCookie('token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     path: '/',
   });
 

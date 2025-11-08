@@ -49,31 +49,38 @@ app.use(cors({
     // In development, allow all localhost origins
     if (config.node_env === 'development') {
       if (!origin || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+        console.log(`[CORS] Allowed dev origin: ${origin || 'no-origin'}`);
         return callback(null, true);
       }
     }
     
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('[CORS] Allowed request with no origin (mobile/curl)');
+      return callback(null, true);
+    }
     
     const allowedOrigins = [
       'http://localhost:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3000',
-      'http://127.0.0.1:3001',
+      'http://localhost:5173', // Vite dev server
       config.frontend_url
-    ];
+    ].filter(Boolean); // Remove undefined values
+    
+    console.log(`[CORS] Checking origin: ${origin} against allowed: ${allowedOrigins.join(', ')}`);
     
     if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log(`[CORS] ✓ Origin allowed: ${origin}`);
       callback(null, true);
     } else {
-      console.warn(`CORS blocked origin: ${origin}`);
+      console.warn(`[CORS] ✗ Blocked origin: ${origin}`);
+      console.warn(`[CORS] Allowed origins: ${allowedOrigins.join(', ')}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Set-Cookie'], // Important for cross-domain cookies
   preflightContinue: false,
   optionsSuccessStatus: 200
 }));
