@@ -20,6 +20,10 @@ import router from "./app/routes";
 
 const app: Application = express();
 
+// Render & other hosting providers sit behind proxies; trust the first proxy so
+// secure cookies (with the Secure flag) and req.secure are handled correctly.
+app.set("trust proxy", 1);
+
 // Security middleware
 app.use(helmet());
 

@@ -3,6 +3,9 @@ import { Request, Response } from "express";
 import { catchAsync } from "../../utils/catchAsync";
 import { userService } from "./user.service";
 import { AuthenticatedRequest } from "../../middlewares/auth";
+import config from "../../config";
+
+const isCrossSiteEnvironment = config.node_env !== "development";
 
 const createUser = catchAsync(async (req: Request, res: Response) => {
   const user = await userService.createUser(req.body);
@@ -133,7 +136,7 @@ const login = catchAsync(async (req: Request, res: Response) => {
   res.cookie("token", result.accessToken, {
     httpOnly: true,
     secure: true, // Always true for cross-domain cookies (requires HTTPS)
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // 'none' for cross-domain in production
+    sameSite: isCrossSiteEnvironment ? "none" : "lax", // 'none' for cross-domain in production
     expires: result.tokenExpires,
     path: "/",
   });
@@ -157,7 +160,7 @@ const logout = catchAsync(async (req: Request, res: Response) => {
   res.clearCookie("token", {
     httpOnly: true,
     secure: true,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    sameSite: isCrossSiteEnvironment ? "none" : "lax",
     path: "/",
   });
 

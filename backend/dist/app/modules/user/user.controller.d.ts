@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
 declare const createUser: (req: Request, res: Response, next: import("express").NextFunction) => void;
 declare const getUsers: (req: Request, res: Response, next: import("express").NextFunction) => void;
 declare const getUserById: (req: Request, res: Response, next: import("express").NextFunction) => void;

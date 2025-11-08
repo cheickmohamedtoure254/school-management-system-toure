@@ -7,11 +7,13 @@ exports.getUsersByRole = exports.getUsersBySchool = exports.getCurrentUser = exp
 const http_status_1 = __importDefault(require("http-status"));
 const catchAsync_1 = require("../../utils/catchAsync");
 const user_service_1 = require("./user.service");
+const config_1 = __importDefault(require("../../config"));
+const isCrossSiteEnvironment = config_1.default.node_env !== "development";
 const createUser = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const user = await user_service_1.userService.createUser(req.body);
     res.status(http_status_1.default.CREATED).json({
         success: true,
-        message: 'User created successfully',
+        message: "User created successfully",
         data: user,
     });
 });
@@ -20,7 +22,7 @@ const getUsers = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const result = await user_service_1.userService.getUsers(req.query);
     res.status(http_status_1.default.OK).json({
         success: true,
-        message: 'Users fetched successfully',
+        message: "Users fetched successfully",
         data: result.users,
         pagination: {
             totalCount: result.totalCount,
@@ -36,7 +38,7 @@ const getUserById = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const user = await user_service_1.userService.getUserById(req.params.id);
     res.status(http_status_1.default.OK).json({
         success: true,
-        message: 'User fetched successfully',
+        message: "User fetched successfully",
         data: user,
     });
 });
@@ -45,7 +47,7 @@ const updateUser = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const user = await user_service_1.userService.updateUser(req.params.id, req.body);
     res.status(http_status_1.default.OK).json({
         success: true,
-        message: 'User updated successfully',
+        message: "User updated successfully",
         data: user,
     });
 });
@@ -54,7 +56,7 @@ const deleteUser = (0, catchAsync_1.catchAsync)(async (req, res) => {
     await user_service_1.userService.deleteUser(req.params.id);
     res.status(http_status_1.default.OK).json({
         success: true,
-        message: 'User deleted successfully',
+        message: "User deleted successfully",
         data: null,
     });
 });
@@ -63,7 +65,7 @@ const changePassword = (0, catchAsync_1.catchAsync)(async (req, res) => {
     await user_service_1.userService.changePassword(req.params.id, req.body);
     res.status(http_status_1.default.OK).json({
         success: true,
-        message: 'Password changed successfully',
+        message: "Password changed successfully",
         data: null,
     });
 });
@@ -72,14 +74,14 @@ const forcePasswordChange = (0, catchAsync_1.catchAsync)(async (req, res) => {
     if (!req.user) {
         res.status(http_status_1.default.UNAUTHORIZED).json({
             success: false,
-            message: 'Authentication required',
+            message: "Authentication required",
         });
         return;
     }
     await user_service_1.userService.forcePasswordChange(req.user.id, req.body.newPassword);
     res.status(http_status_1.default.OK).json({
         success: true,
-        message: 'Password changed successfully',
+        message: "Password changed successfully",
         data: null,
     });
 });
@@ -88,14 +90,14 @@ const verify = (0, catchAsync_1.catchAsync)(async (req, res) => {
     if (!req.user) {
         res.status(http_status_1.default.UNAUTHORIZED).json({
             success: false,
-            message: 'Authentication required',
+            message: "Authentication required",
         });
         return;
     }
     const user = await user_service_1.userService.getUserById(req.user.id);
     res.status(http_status_1.default.OK).json({
         success: true,
-        message: 'Token verified successfully',
+        message: "Token verified successfully",
         data: {
             user: user,
             requiresPasswordChange: user.isFirstLogin,
@@ -107,23 +109,25 @@ const resetPassword = (0, catchAsync_1.catchAsync)(async (req, res) => {
     await user_service_1.userService.resetPassword(req.params.id, req.body.newPassword);
     res.status(http_status_1.default.OK).json({
         success: true,
-        message: 'Password reset successfully',
+        message: "Password reset successfully",
         data: null,
     });
 });
 exports.resetPassword = resetPassword;
 const login = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const result = await user_service_1.userService.login(req.body);
-    res.cookie('token', result.accessToken, {
+    res.cookie("token", result.accessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: true,
+        sameSite: isCrossSiteEnvironment ? "none" : "lax",
         expires: result.tokenExpires,
-        path: '/',
+        path: "/",
     });
     res.status(http_status_1.default.OK).json({
         success: true,
-        message: result.requiresPasswordChange ? 'Login successful. Password change required.' : 'Login successful',
+        message: result.requiresPasswordChange
+            ? "Login successful. Password change required."
+            : "Login successful",
         data: {
             user: result.user,
             token: result.accessToken,
@@ -134,15 +138,15 @@ const login = (0, catchAsync_1.catchAsync)(async (req, res) => {
 });
 exports.login = login;
 const logout = (0, catchAsync_1.catchAsync)(async (req, res) => {
-    res.clearCookie('token', {
+    res.clearCookie("token", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        path: '/',
+        secure: true,
+        sameSite: isCrossSiteEnvironment ? "none" : "lax",
+        path: "/",
     });
     res.status(http_status_1.default.OK).json({
         success: true,
-        message: 'Logout successful',
+        message: "Logout successful",
         data: null,
     });
 });
@@ -151,14 +155,14 @@ const getCurrentUser = (0, catchAsync_1.catchAsync)(async (req, res) => {
     if (!req.user) {
         res.status(http_status_1.default.UNAUTHORIZED).json({
             success: false,
-            message: 'Authentication required',
+            message: "Authentication required",
         });
         return;
     }
     const user = await user_service_1.userService.getUserById(req.user.id);
     res.status(http_status_1.default.OK).json({
         success: true,
-        message: 'Current user fetched successfully',
+        message: "Current user fetched successfully",
         data: user,
     });
 });
@@ -167,7 +171,7 @@ const getUsersBySchool = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const users = await user_service_1.userService.getUsersBySchool(req.params.schoolId);
     res.status(http_status_1.default.OK).json({
         success: true,
-        message: 'School users fetched successfully',
+        message: "School users fetched successfully",
         data: users,
     });
 });
@@ -176,7 +180,7 @@ const getUsersByRole = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const users = await user_service_1.userService.getUsersByRole(req.params.role);
     res.status(http_status_1.default.OK).json({
         success: true,
-        message: 'Users by role fetched successfully',
+        message: "Users by role fetched successfully",
         data: users,
     });
 });
