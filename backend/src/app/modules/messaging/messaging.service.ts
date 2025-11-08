@@ -2,10 +2,7 @@ import { FilterQuery, Types } from "mongoose";
 import httpStatus from "http-status";
 import config from "../../config";
 import { AppError } from "../../errors/AppError";
-import {
-  Conversation,
-  Message,
-} from "./messaging.model";
+import { Conversation, Message } from "./messaging.model";
 import {
   ConversationSummary,
   MessageSummary,
@@ -228,10 +225,7 @@ class MessagingService {
     userDoc: IUserDocument
   ): Promise<MessagingContact[]> {
     const schoolObjectId = normalizeObjectId(userDoc.schoolId!);
-    const teacher = await this.getTeacherByUserId(
-      schoolObjectId,
-      userDoc._id
-    );
+    const teacher = await this.getTeacherByUserId(schoolObjectId, userDoc._id);
 
     const schedules = await Schedule.find({
       schoolId: schoolObjectId,
@@ -303,7 +297,12 @@ class MessagingService {
         ],
       });
 
-      const parentDoc = studentDoc.parentId as IParentDocument | undefined;
+      // parentId can be either an ObjectId or a populated Parent document.
+      // Cast via 'unknown' first to avoid TypeScript conversion errors when
+      // an ObjectId is being asserted to IParentDocument at compile time.
+      const parentDoc = studentDoc.parentId as unknown as
+        | IParentDocument
+        | undefined;
       if (parentDoc?.userId && isPopulatedUser(parentDoc.userId)) {
         const parentUser = parentDoc.userId;
         const parentKey = parentUser._id.toString();
@@ -351,11 +350,10 @@ class MessagingService {
 
     const teachers = await Teacher.find({
       _id: { $in: Array.from(teacherIds).slice(0, MAX_CONTACTS) },
-    })
-      .populate({
-        path: "userId",
-        select: "firstName lastName role username",
-      });
+    }).populate({
+      path: "userId",
+      select: "firstName lastName role username",
+    });
 
     return teachers
       .map((teacherDoc) => {
@@ -416,9 +414,10 @@ class MessagingService {
         continue;
       }
 
-      const contactLabel = `${(populatedChild.userId as any)?.firstName ?? ""} ${
-        (populatedChild.userId as any)?.lastName ?? ""
-      }`.trim() || "Student";
+      const contactLabel =
+        `${(populatedChild.userId as any)?.firstName ?? ""} ${
+          (populatedChild.userId as any)?.lastName ?? ""
+        }`.trim() || "Student";
 
       const teacherContacts = await this.getContactsForStudent(
         userDoc,
@@ -511,7 +510,9 @@ class MessagingService {
     const roles = participants.map((p) => p.role as UserRole);
     roles.forEach((role) => this.ensureAllowedRole(role));
 
-    const teacherCount = roles.filter((role) => role === UserRole.TEACHER).length;
+    const teacherCount = roles.filter(
+      (role) => role === UserRole.TEACHER
+    ).length;
     if (!teacherCount) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
@@ -578,7 +579,11 @@ class MessagingService {
       payload.contextStudentId
     );
 
-    this.ensureConversationComposition(participantDocs, requester, contextStudent);
+    this.ensureConversationComposition(
+      participantDocs,
+      requester,
+      contextStudent
+    );
 
     if (contextStudent) {
       // Ensure the student belongs to the same school
@@ -607,7 +612,8 @@ class MessagingService {
             if (
               !parentDoc ||
               !parentDoc.children?.some(
-                (childId) => childId.toString() === contextStudent._id.toString()
+                (childId) =>
+                  childId.toString() === contextStudent._id.toString()
               )
             ) {
               throw new AppError(
@@ -687,14 +693,17 @@ class MessagingService {
 
     let contextStudentSummary: ConversationSummary["contextStudent"] = null;
     if (conversationObject.contextStudentId) {
-      const student = await Student.findById(conversationObject.contextStudentId)
-        .populate("userId", "firstName lastName");
+      const student = await Student.findById(
+        conversationObject.contextStudentId
+      ).populate("userId", "firstName lastName");
       if (student) {
         const studentUser = isPopulatedUser(student.userId)
           ? student.userId
           : undefined;
         const studentName = studentUser
-          ? `${studentUser.firstName ?? ""} ${studentUser.lastName ?? ""}`.trim()
+          ? `${studentUser.firstName ?? ""} ${
+              studentUser.lastName ?? ""
+            }`.trim()
           : "Student";
         contextStudentSummary = {
           studentId: student._id.toString(),
@@ -735,7 +744,10 @@ class MessagingService {
 
     const summaries: ConversationSummary[] = [];
     for (const conversation of conversations) {
-      const summary = await this.buildConversationSummary(conversation, requester);
+      const summary = await this.buildConversationSummary(
+        conversation,
+        requester
+      );
       summaries.push(summary);
     }
     return summaries;
@@ -750,8 +762,9 @@ class MessagingService {
       throw new AppError(httpStatus.NOT_FOUND, "Conversation not found");
     }
 
-    const isParticipant = conversation.participantIds.some((participant) =>
-      participant.userId.toString() === requester._id.toString()
+    const isParticipant = conversation.participantIds.some(
+      (participant) =>
+        participant.userId.toString() === requester._id.toString()
     );
     if (!isParticipant) {
       throw new AppError(httpStatus.FORBIDDEN, "Access denied");
@@ -770,7 +783,9 @@ class MessagingService {
       conversationId,
       requester
     );
-    const conversationIdString = (conversation._id as Types.ObjectId).toString();
+    const conversationIdString = (
+      conversation._id as Types.ObjectId
+    ).toString();
 
     const limit = Math.min(query.limit ?? 50, 100);
 
@@ -794,15 +809,13 @@ class MessagingService {
       : undefined;
 
     return {
-      messages: trimmed
-        .reverse()
-        .map((message) => ({
-          id: String(message._id),
-          conversationId: conversationIdString,
-          senderId: (message.senderId as Types.ObjectId).toString(),
-          body: message.body,
-          createdAt: message.createdAt,
-        })),
+      messages: trimmed.reverse().map((message) => ({
+        id: String(message._id),
+        conversationId: conversationIdString,
+        senderId: (message.senderId as Types.ObjectId).toString(),
+        body: message.body,
+        createdAt: message.createdAt,
+      })),
       nextCursor,
     };
   }
@@ -843,7 +856,9 @@ class MessagingService {
     conversation.updatedAt = new Date();
     await conversation.save();
 
-    const conversationIdString = (conversation._id as Types.ObjectId).toString();
+    const conversationIdString = (
+      conversation._id as Types.ObjectId
+    ).toString();
 
     return {
       id: String(message._id),

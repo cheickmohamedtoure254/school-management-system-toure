@@ -394,7 +394,7 @@ class AcademicCalendarService {
       );
 
       // Create individual exam events for each subject
-      const examSchedules = [];
+      const examSchedules: any[] = [];
       for (const schedule of examData.examSchedules) {
         const examSchedule = await AcademicCalendar.create(
           [

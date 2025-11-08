@@ -76,11 +76,7 @@ declare class FeeCollectionService {
         }> & {
             __v: number;
         };
-        oneTimeFeeTransactions: (import("mongoose").Document<unknown, {}, import("./fee.interface").IFeeTransaction, {}, {}> & import("./fee.interface").IFeeTransaction & Required<{
-            _id: Types.ObjectId;
-        }> & {
-            __v: number;
-        })[];
+        oneTimeFeeTransactions: any[];
         feeRecord: import("mongoose").Document<unknown, {}, import("./fee.interface").IStudentFeeRecord, {}, {}> & import("./fee.interface").IStudentFeeRecord & Required<{
             _id: Types.ObjectId;
         }> & {

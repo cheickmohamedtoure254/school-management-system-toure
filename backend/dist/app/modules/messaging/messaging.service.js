@@ -246,8 +246,7 @@ class MessagingService {
         }
         const teachers = await teacher_model_1.Teacher.find({
             _id: { $in: Array.from(teacherIds).slice(0, MAX_CONTACTS) },
-        })
-            .populate({
+        }).populate({
             path: "userId",
             select: "firstName lastName role username",
         });
@@ -452,8 +451,7 @@ class MessagingService {
         const userSummaries = await this.loadUserSummaries(userIds);
         let contextStudentSummary = null;
         if (conversationObject.contextStudentId) {
-            const student = await student_model_1.Student.findById(conversationObject.contextStudentId)
-                .populate("userId", "firstName lastName");
+            const student = await student_model_1.Student.findById(conversationObject.contextStudentId).populate("userId", "firstName lastName");
             if (student) {
                 const studentUser = isPopulatedUser(student.userId)
                     ? student.userId
@@ -535,9 +533,7 @@ class MessagingService {
             ? trimmed[trimmed.length - 1].createdAt
             : undefined;
         return {
-            messages: trimmed
-                .reverse()
-                .map((message) => ({
+            messages: trimmed.reverse().map((message) => ({
                 id: String(message._id),
                 conversationId: conversationIdString,
                 senderId: message.senderId.toString(),

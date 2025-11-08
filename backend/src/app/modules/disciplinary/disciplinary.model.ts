@@ -532,7 +532,7 @@ disciplinaryActionSchema.statics.getClassDisciplinaryStats = async function(
 disciplinaryActionSchema.statics.issueRedWarrant = async function(data: any) {
   // TEMPORARILY SIMPLIFIED - Fix interface and type issues later
   
-  const actions = [];
+  const actions: any[] = [];
   
   for (const studentId of data.studentIds || []) {
     const action = await this.create({

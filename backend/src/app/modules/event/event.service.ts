@@ -61,8 +61,8 @@ const getEvents = async (
   // Filter by grade/section for specific user context
   if (userRole === 'student' || userRole === 'parent') {
     // Build grade/section filter - empty arrays mean "all grades/sections"
-    const gradeConditions = [];
-    const sectionConditions = [];
+    const gradeConditions: any[] = [];
+    const sectionConditions: any[] = [];
     
     if (userGrade) {
       gradeConditions.push(
@@ -151,8 +151,8 @@ const getTodaysEvents = async (
   // Filter by user context
   if (userRole === 'student' || userRole === 'parent') {
     // Build grade/section filter - empty arrays mean "all grades/sections"
-    const gradeConditions = [];
-    const sectionConditions = [];
+    const gradeConditions: any[] = [];
+    const sectionConditions: any[] = [];
     
     if (userGrade) {
       gradeConditions.push(

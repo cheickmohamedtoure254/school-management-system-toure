@@ -237,7 +237,7 @@ studentFeeRecordSchema.statics.createForStudent = async function (
   startMonth: Month = Month.APRIL
 ) {
   const monthlyAmount = Math.round(totalFeeAmount / 12);
-  const monthlyPayments = [];
+  const monthlyPayments: any[] = [];
   
   // Ensure dueDate is valid (1-31), default to 10 if invalid
   const validDueDate = (dueDate && dueDate >= 1 && dueDate <= 31) ? dueDate : 10;

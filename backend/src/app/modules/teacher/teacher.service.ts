@@ -1396,10 +1396,10 @@ class TeacherService {
         },
       ]);
 
-      const availablePeriods = [];
-      const currentPeriods = [];
-      const upcomingPeriods = [];
-      const holidayPeriods = [];
+      const availablePeriods: any[] = [];
+      const currentPeriods: any[] = [];
+      const upcomingPeriods: any[] = [];
+      const holidayPeriods: any[] = [];
 
       for (const schedule of schedules) {
         const holidayEvents = await findHolidayEventsForClass({
@@ -1884,8 +1884,8 @@ class TeacherService {
       const { dateKey } = normaliseDateKey(now, schoolTimezone);
       const schoolId = (teacher.schoolId as any)?._id || teacher.schoolId;
 
-      const classesWithStudents = [];
-      const holidayClasses = [];
+      const classesWithStudents: any[] = [];
+      const holidayClasses: any[] = [];
 
       for (const schedule of schedules) {
         const holidayEvents = await findHolidayEventsForClass({
@@ -2210,7 +2210,7 @@ class TeacherService {
       const { DisciplinaryAction } = await import('../disciplinary/disciplinary.model');
       
       // Create disciplinary action for each selected student
-      const actions = [];
+      const actions: any[] = [];
       
       for (const studentId of warningData.studentIds) {
         // Verify teacher has permission for the student (basic check)
@@ -2295,7 +2295,7 @@ class TeacherService {
       const { DisciplinaryAction } = await import('../disciplinary/disciplinary.model');
       
       // Create red warrant type punishment for each student
-      const actions = [];
+      const actions: any[] = [];
       
       for (const studentId of punishmentData.studentIds) {
         // Verify teacher has permission
@@ -2703,7 +2703,7 @@ class TeacherService {
         status: { $in: ['completed', 'grading'] }
       }).populate('subjectId', 'name code');
 
-      const gradingTasks = [];
+      const gradingTasks: any[] = [];
 
       // Process academic calendar exams (simplified for now)
       // TODO: Properly implement when academic calendar schema is finalized
@@ -3058,8 +3058,8 @@ class TeacherService {
         }
       }
 
-      const submittedGrades = [];
-      const errors = [];
+      const submittedGrades: any[] = [];
+      const errors: any[] = [];
 
       // Process each grade submission
       for (const gradeData of grades) {

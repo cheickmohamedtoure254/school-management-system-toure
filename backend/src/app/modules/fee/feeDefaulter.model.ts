@@ -88,7 +88,7 @@ feeDefaulterSchema.statics.syncDefaultersForSchool = async function (
     "monthlyPayments.waived": false,
   }).populate("student");
 
-  const defaultersToUpsert = [];
+  const defaultersToUpsert: any[] = [];
 
   for (const record of overdueRecords) {
     const overdueMonths: Month[] = [];

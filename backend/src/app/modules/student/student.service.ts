@@ -275,7 +275,7 @@ class StudentService {
         const { parentInfo } = studentData;
 
         // First check if a parent with similar details already exists to avoid duplicates
-        let existingParent = null;
+        let existingParent: any = null;
         if (parentInfo.email) {
           const existingUser = await User.findOne({
             email: parentInfo.email,

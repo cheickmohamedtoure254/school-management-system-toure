@@ -255,8 +255,8 @@ class FeeCollectionService {
       throw new AppError(400, "Invalid month selected");
     }
 
-    const warnings = [];
-    const errors = [];
+    const warnings: string[] = [];
+    const errors: string[] = [];
 
     // Check if already paid
     if (monthlyPayment.status === "paid") {
@@ -417,7 +417,7 @@ class FeeCollectionService {
     }
 
     // Record one-time fee payments if this is first payment
-    const oneTimeFeeTransactions = [];
+    const oneTimeFeeTransactions: any[] = [];
     if (isFirstPayment && totalOneTimeFeeAmount > 0) {
       for (const oneTimeFee of pendingOneTimeFees) {
         const amountToPay = oneTimeFee.dueAmount - oneTimeFee.paidAmount;
@@ -1218,7 +1218,7 @@ class FeeCollectionService {
     dueDate: number = 10, // Default to 10th of month if not provided
     academicYear: string
   ) {
-    const payments = [];
+    const payments: any[] = [];
     const startYear = parseInt(academicYear.split("-")[0]);
     
     // Ensure dueDate is valid (1-31), default to 10 if invalid

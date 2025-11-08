@@ -315,7 +315,7 @@ class ExamService {
     }
 
     // Process results
-    const results = [];
+    const results: any[] = [];
     for (const resultData of data.results) {
       // Check if result already exists
       let existingResult = await ExamResult.findOne({

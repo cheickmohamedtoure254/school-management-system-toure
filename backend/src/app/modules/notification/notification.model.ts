@@ -126,7 +126,7 @@ notificationSchema.statics.createAttendanceAlert = async function(data: {
     associatedStudentId: data.studentId
   }).populate('userId');
 
-  const notifications = [];
+  const notifications: any[] = [];
   
   for (const parent of parents) {
     const notification = new this({
@@ -161,7 +161,7 @@ notificationSchema.statics.createHomeworkAlert = async function(data: {
   dueDate: Date;
   subjectName: string;
 }) {
-  const notifications = [];
+  const notifications: any[] = [];
   
   for (const studentId of data.studentIds) {
     const student = await model('Student').findById(studentId).populate('userId');
