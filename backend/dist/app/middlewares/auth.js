@@ -14,6 +14,18 @@ exports.authenticate = (0, catchAsync_1.catchAsync)(async (req, res, next) => {
     if (req.cookies && req.cookies.token) {
         token = req.cookies.token;
     }
+    if (!token && req.headers.cookie) {
+        const rawToken = req.headers.cookie
+            .split(";")
+            .map((cookie) => cookie.trim())
+            .find((cookie) => cookie.startsWith("token="));
+        if (rawToken) {
+            token = decodeURIComponent(rawToken.split("=")[1] || "");
+        }
+    }
+    if (req.cookie && req.cookie.token) {
+        token = req.cookie.token;
+    }
     if (!token) {
         const authHeader = req.headers.authorization;
         if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -59,6 +71,15 @@ exports.optionalAuth = (0, catchAsync_1.catchAsync)(async (req, res, next) => {
     let token;
     if (req.cookies && req.cookies.token) {
         token = req.cookies.token;
+    }
+    if (!token && req.headers.cookie) {
+        const rawToken = req.headers.cookie
+            .split(";")
+            .map((cookie) => cookie.trim())
+            .find((cookie) => cookie.startsWith("token="));
+        if (rawToken) {
+            token = decodeURIComponent(rawToken.split("=")[1] || "");
+        }
     }
     if (!token) {
         const authHeader = req.headers.authorization;

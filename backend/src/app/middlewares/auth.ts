@@ -15,6 +15,7 @@ export interface AuthenticatedRequest extends Request {
     schoolId?: string;
     isActive: boolean;
   };
+  cookie?: any; // For compatibility with some clients
   teacher?: any; // Teacher document for teacher-specific routes
 }
 
@@ -30,6 +31,22 @@ export const authenticate = catchAsync(
     // Check for token in cookies (more secure)
     if (req.cookies && req.cookies.token) {
       token = req.cookies.token;
+    }
+
+    // Fallback: Parse raw cookie header when cookie-parser fails to populate
+    if (!token && req.headers.cookie) {
+      const rawToken = req.headers.cookie
+        .split(";")
+        .map((cookie) => cookie.trim())
+        .find((cookie) => cookie.startsWith("token="));
+
+      if (rawToken) {
+        token = decodeURIComponent(rawToken.split("=")[1] || "");
+      }
+    }
+
+    if (req.cookie && req.cookie.token) {
+      token = req.cookie.token;
     }
 
     // Fallback to Authorization header for API clients
@@ -120,6 +137,17 @@ export const optionalAuth = catchAsync(
     // Check for token in cookies first, then headers as fallback
     if (req.cookies && req.cookies.token) {
       token = req.cookies.token;
+    }
+
+    if (!token && req.headers.cookie) {
+      const rawToken = req.headers.cookie
+        .split(";")
+        .map((cookie) => cookie.trim())
+        .find((cookie) => cookie.startsWith("token="));
+
+      if (rawToken) {
+        token = decodeURIComponent(rawToken.split("=")[1] || "");
+      }
     }
 
     if (!token) {
@@ -279,7 +307,6 @@ export const requireSchoolAdmin = (
   res: Response,
   next: NextFunction
 ) => {
-  
   if (!req.user) {
     return next(new AppError(401, "Authentication required"));
   }

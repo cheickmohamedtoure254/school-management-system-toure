@@ -8,6 +8,7 @@ export interface AuthenticatedRequest extends Request {
         schoolId?: string;
         isActive: boolean;
     };
+    cookie?: any;
     teacher?: any;
 }
 export declare const authenticate: (req: Request, res: Response, next: NextFunction) => void;
