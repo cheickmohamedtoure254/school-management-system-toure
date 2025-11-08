@@ -78,7 +78,9 @@ feeDefaulterSchema.statics.syncDefaultersForSchool = async function (
 ) {
   const StudentFeeRecord = model("StudentFeeRecord");
   const now = new Date();
-  const cutoffDate = new Date(now.getTime() - gracePeriodDays * 24 * 60 * 60 * 1000);
+  const cutoffDate = new Date(
+    now.getTime() - gracePeriodDays * 24 * 60 * 60 * 1000
+  );
 
   // Find all students with overdue payments
   const overdueRecords = await StudentFeeRecord.find({
@@ -102,7 +104,8 @@ feeDefaulterSchema.statics.syncDefaultersForSchool = async function (
         !payment.waived
       ) {
         overdueMonths.push(payment.month);
-        totalDueAmount += payment.dueAmount - payment.paidAmount + payment.lateFee;
+        totalDueAmount +=
+          payment.dueAmount - payment.paidAmount + payment.lateFee;
 
         if (!firstDueDate || payment.dueDate < firstDueDate) {
           firstDueDate = payment.dueDate as Date;
@@ -112,7 +115,8 @@ feeDefaulterSchema.statics.syncDefaultersForSchool = async function (
 
     if (overdueMonths.length > 0 && firstDueDate !== null) {
       const daysSinceFirstDue = Math.floor(
-        (now.getTime() - (firstDueDate as Date).getTime()) / (1000 * 60 * 60 * 24)
+        (now.getTime() - (firstDueDate as Date).getTime()) /
+          (1000 * 60 * 60 * 24)
       );
 
       defaultersToUpsert.push({
@@ -252,7 +256,10 @@ feeDefaulterSchema.statics.getDefaultersNeedingReminders = async function (
       { lastReminderDate: { $lt: cutoffDate } },
     ],
   })
-    .populate("student", "studentId firstName lastName parentContact parentEmail")
+    .populate(
+      "student",
+      "studentId firstName lastName parentContact parentEmail"
+    )
     .sort({ daysSinceFirstDue: -1 });
 };
 
@@ -271,9 +278,9 @@ feeDefaulterSchema.virtual("severityLevel").get(function () {
 import { Model } from "mongoose";
 import { IFeeDefaulterModel } from "./fee.interface";
 
-const FeeDefaulter = model<IFeeDefaulter, Model<IFeeDefaulter> & IFeeDefaulterModel>(
-  "FeeDefaulter",
-  feeDefaulterSchema
-);
+const FeeDefaulter = model<
+  IFeeDefaulter,
+  Model<IFeeDefaulter> & IFeeDefaulterModel
+>("FeeDefaulter", feeDefaulterSchema);
 
 export default FeeDefaulter;

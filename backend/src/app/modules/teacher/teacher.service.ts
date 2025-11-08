@@ -12,7 +12,10 @@ import { Subject } from "../subject/subject.model";
 import { Schedule } from "../schedule/schedule.model";
 import { Attendance } from "../attendance/attendance.model";
 import { Student } from "../student/student.model";
-import { StudentDayAttendance, normaliseDateKey } from "../attendance/day-attendance.model";
+import {
+  StudentDayAttendance,
+  normaliseDateKey,
+} from "../attendance/day-attendance.model";
 import { findHolidayEventsForClass } from "../attendance/holiday-utils";
 import { Homework } from "../homework/homework.model";
 import { Notification } from "../notification/notification.model";
@@ -34,7 +37,9 @@ class TeacherService {
 
     try {
       // Verify school exists and is active using MongoDB ObjectId
-      const school = await School.findById(new Types.ObjectId(teacherData.schoolId));
+      const school = await School.findById(
+        new Types.ObjectId(teacherData.schoolId)
+      );
       if (!school) {
         throw new AppError(httpStatus.NOT_FOUND, "School not found");
       }
@@ -466,20 +471,26 @@ class TeacherService {
 
       // Handle subject conversion if they are ObjectIds
       if (teacher.subjects && teacher.subjects.length > 0) {
-        const subjectObjectIds = teacher.subjects.filter(subject => 
-          typeof subject === 'string' && /^[0-9a-fA-F]{24}$/.test(subject)
+        const subjectObjectIds = teacher.subjects.filter(
+          (subject) =>
+            typeof subject === "string" && /^[0-9a-fA-F]{24}$/.test(subject)
         );
-        
+
         if (subjectObjectIds.length > 0) {
-          const { Subject } = await import('../subject/subject.model');
-          const subjectDocs = await Subject.find({ 
-            _id: { $in: subjectObjectIds.map(id => new Types.ObjectId(id)) } 
-          }).select('name');
-          
-          const subjectMap = new Map(subjectDocs.map(doc => [doc._id.toString(), doc.name]));
-          
-          teacher.subjects = teacher.subjects.map(subject => {
-            if (typeof subject === 'string' && /^[0-9a-fA-F]{24}$/.test(subject)) {
+          const { Subject } = await import("../subject/subject.model");
+          const subjectDocs = await Subject.find({
+            _id: { $in: subjectObjectIds.map((id) => new Types.ObjectId(id)) },
+          }).select("name");
+
+          const subjectMap = new Map(
+            subjectDocs.map((doc) => [doc._id.toString(), doc.name])
+          );
+
+          teacher.subjects = teacher.subjects.map((subject) => {
+            if (
+              typeof subject === "string" &&
+              /^[0-9a-fA-F]{24}$/.test(subject)
+            ) {
               return subjectMap.get(subject) || subject;
             }
             return subject;
@@ -788,7 +799,9 @@ class TeacherService {
       }
 
       const teachers = await Teacher.findBySubject(schoolId, subject);
-      return await Promise.all(teachers.map((teacher) => this.formatTeacherResponse(teacher)));
+      return await Promise.all(
+        teachers.map((teacher) => this.formatTeacherResponse(teacher))
+      );
     } catch (error) {
       throw new AppError(
         httpStatus.INTERNAL_SERVER_ERROR,
@@ -813,8 +826,14 @@ class TeacherService {
         recentJoining,
       ] = await Promise.all([
         Teacher.countDocuments({ schoolId: new Types.ObjectId(schoolId) }),
-        Teacher.countDocuments({ schoolId: new Types.ObjectId(schoolId), isActive: true }),
-        Teacher.countDocuments({ schoolId: new Types.ObjectId(schoolId), isClassTeacher: true }),
+        Teacher.countDocuments({
+          schoolId: new Types.ObjectId(schoolId),
+          isActive: true,
+        }),
+        Teacher.countDocuments({
+          schoolId: new Types.ObjectId(schoolId),
+          isClassTeacher: true,
+        }),
         Teacher.aggregate([
           { $match: { schoolId: new Types.ObjectId(schoolId) } },
           { $group: { _id: "$designation", count: { $sum: 1 } } },
@@ -964,26 +983,34 @@ class TeacherService {
     // Handle subject conversion if they are ObjectIds
     let subjects = teacher.subjects || [];
     if (subjects.length > 0) {
-      const subjectObjectIds = subjects.filter((subject: any) => 
-        typeof subject === 'string' && /^[0-9a-fA-F]{24}$/.test(subject)
+      const subjectObjectIds = subjects.filter(
+        (subject: any) =>
+          typeof subject === "string" && /^[0-9a-fA-F]{24}$/.test(subject)
       );
-      
+
       if (subjectObjectIds.length > 0) {
         try {
-          const subjectDocs = await Subject.find({ 
-            _id: { $in: subjectObjectIds.map((id: string) => new Types.ObjectId(id)) } 
-          }).select('name');
-          
-          const subjectMap = new Map(subjectDocs.map(doc => [doc._id.toString(), doc.name]));
-          
+          const subjectDocs = await Subject.find({
+            _id: {
+              $in: subjectObjectIds.map((id: string) => new Types.ObjectId(id)),
+            },
+          }).select("name");
+
+          const subjectMap = new Map(
+            subjectDocs.map((doc) => [doc._id.toString(), doc.name])
+          );
+
           subjects = subjects.map((subject: any) => {
-            if (typeof subject === 'string' && /^[0-9a-fA-F]{24}$/.test(subject)) {
+            if (
+              typeof subject === "string" &&
+              /^[0-9a-fA-F]{24}$/.test(subject)
+            ) {
               return subjectMap.get(subject) || subject;
             }
             return subject;
           });
         } catch (error) {
-          console.warn('Failed to convert subject ObjectIds to names:', error);
+          console.warn("Failed to convert subject ObjectIds to names:", error);
           // If conversion fails, keep the original subjects
         }
       }
@@ -1018,25 +1045,36 @@ class TeacherService {
       totalExperience,
       createdAt: teacher.createdAt,
       updatedAt: teacher.updatedAt,
-      user: teacher.userId || teacher.user
-        ? {
-            id: (teacher.userId?._id || teacher.user?._id || teacher.userId?.id || teacher.user?.id)?.toString(),
-            username: teacher.userId?.username || teacher.user?.username,
-            firstName: teacher.userId?.firstName || teacher.user?.firstName,
-            lastName: teacher.userId?.lastName || teacher.user?.lastName,
-            fullName: `${teacher.userId?.firstName || teacher.user?.firstName || ''} ${teacher.userId?.lastName || teacher.user?.lastName || ''}`.trim() || 'Unknown User',
-            email: teacher.userId?.email || teacher.user?.email,
-            phone: teacher.userId?.phone || teacher.user?.phone,
-          }
-        : {
-            id: '',
-            username: 'unknown',
-            firstName: 'Unknown',
-            lastName: 'User',
-            fullName: 'Unknown User',
-            email: '',
-            phone: '',
-          },
+      user:
+        teacher.userId || teacher.user
+          ? {
+              id: (
+                teacher.userId?._id ||
+                teacher.user?._id ||
+                teacher.userId?.id ||
+                teacher.user?.id
+              )?.toString(),
+              username: teacher.userId?.username || teacher.user?.username,
+              firstName: teacher.userId?.firstName || teacher.user?.firstName,
+              lastName: teacher.userId?.lastName || teacher.user?.lastName,
+              fullName:
+                `${
+                  teacher.userId?.firstName || teacher.user?.firstName || ""
+                } ${
+                  teacher.userId?.lastName || teacher.user?.lastName || ""
+                }`.trim() || "Unknown User",
+              email: teacher.userId?.email || teacher.user?.email,
+              phone: teacher.userId?.phone || teacher.user?.phone,
+            }
+          : {
+              id: "",
+              username: "unknown",
+              firstName: "Unknown",
+              lastName: "User",
+              fullName: "Unknown User",
+              email: "",
+              phone: "",
+            },
       school: teacher.schoolId?.name
         ? {
             id: teacher.schoolId._id?.toString() || teacher.schoolId.id,
@@ -1061,8 +1099,8 @@ class TeacherService {
     try {
       // Find the teacher by userId
       const teacher = await Teacher.findOne({ userId })
-        .populate('schoolId', 'name')
-        .populate('userId', 'firstName lastName username');
+        .populate("schoolId", "name")
+        .populate("userId", "firstName lastName username");
 
       if (!teacher) {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
@@ -1070,7 +1108,11 @@ class TeacherService {
 
       // Get current date for today's statistics
       const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const startOfDay = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate()
+      );
       const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
       // Calculate real dashboard statistics
@@ -1082,7 +1124,7 @@ class TeacherService {
         schoolId: teacher.schoolId,
         grade: { $in: teacher.grades },
         section: { $in: teacher.sections },
-        isActive: true
+        isActive: true,
       });
 
       // pendingHomework: count homework assigned by this teacher that is not past due
@@ -1090,27 +1132,36 @@ class TeacherService {
       const pendingHomework = await Homework.countDocuments({
         teacherId: teacher._id,
         dueDate: { $gte: now },
-        isPublished: true
+        isPublished: true,
       });
 
       // todayClasses: count of classes scheduled for this teacher today
       const schedules = await Schedule.find({
-        'periods.teacherId': teacher._id,
-        isActive: true
+        "periods.teacherId": teacher._id,
+        isActive: true,
       });
       let todayClasses = 0;
-      const todayDayOfWeek = today.toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
+      const todayDayOfWeek = today
+        .toLocaleString("en-US", { weekday: "long" })
+        .toLowerCase();
       schedules.forEach((schedule: any) => {
-        if (schedule.dayOfWeek && schedule.dayOfWeek.toLowerCase() === todayDayOfWeek) {
+        if (
+          schedule.dayOfWeek &&
+          schedule.dayOfWeek.toLowerCase() === todayDayOfWeek
+        ) {
           // Count periods for this teacher today
-          todayClasses += schedule.periods.filter((p: any) => String(p.teacherId) === String(teacher._id)).length;
+          todayClasses += schedule.periods.filter(
+            (p: any) => String(p.teacherId) === String(teacher._id)
+          ).length;
         }
       });
 
       const dashboardData = {
         teacher: {
           id: teacher._id,
-          name: `${(teacher.userId as any)?.firstName || ''} ${(teacher.userId as any)?.lastName || ''}`.trim(),
+          name: `${(teacher.userId as any)?.firstName || ""} ${
+            (teacher.userId as any)?.lastName || ""
+          }`.trim(),
           subjects: teacher.subjects,
           grades: teacher.grades,
           sections: teacher.sections,
@@ -1135,8 +1186,10 @@ class TeacherService {
 
   async getTeacherSchedule(userId: string): Promise<any> {
     try {
-      const teacher = await Teacher.findOne({ userId })
-        .populate('schoolId', 'name');
+      const teacher = await Teacher.findOne({ userId }).populate(
+        "schoolId",
+        "name"
+      );
 
       if (!teacher) {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
@@ -1153,17 +1206,19 @@ class TeacherService {
         thursday: [],
         friday: [],
         saturday: [],
-        sunday: []
+        sunday: [],
       };
 
       let totalPeriodsPerWeek = 0;
       const subjectsCount = new Set();
       const classesCount = new Set();
 
-      schedules.forEach(schedule => {
-        const teacherPeriods = schedule.getPeriodsForTeacher(teacher._id.toString());
-        
-        teacherPeriods.forEach(period => {
+      schedules.forEach((schedule) => {
+        const teacherPeriods = schedule.getPeriodsForTeacher(
+          teacher._id.toString()
+        );
+
+        teacherPeriods.forEach((period) => {
           const scheduleEntry = {
             scheduleId: schedule._id,
             grade: schedule.grade,
@@ -1174,12 +1229,12 @@ class TeacherService {
             endTime: period.endTime,
             subject: {
               id: (period.subjectId as any)?._id || period.subjectId,
-              name: (period.subjectId as any)?.name || 'Unknown Subject',
-              code: (period.subjectId as any)?.code || 'N/A'
+              name: (period.subjectId as any)?.name || "Unknown Subject",
+              code: (period.subjectId as any)?.code || "N/A",
             },
             roomNumber: period.roomNumber,
             venue: period.roomNumber,
-            duration: this.calculateDuration(period.startTime, period.endTime)
+            duration: this.calculateDuration(period.startTime, period.endTime),
           };
 
           weeklySchedule[schedule.dayOfWeek].push(scheduleEntry);
@@ -1190,7 +1245,7 @@ class TeacherService {
       });
 
       // Sort periods by time within each day
-      Object.keys(weeklySchedule).forEach(day => {
+      Object.keys(weeklySchedule).forEach((day) => {
         weeklySchedule[day].sort((a, b) => {
           if (a.startTime < b.startTime) return -1;
           if (a.startTime > b.startTime) return 1;
@@ -1200,19 +1255,36 @@ class TeacherService {
 
       // Get today's schedule
       const today = new Date();
-      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const dayNames = [
+        "sunday",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+      ];
       const todayName = dayNames[today.getDay()];
       const todaySchedule = weeklySchedule[todayName] || [];
 
       // Find current period
       const currentTime = new Date();
-      const currentTimeString = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`;
-      
-      const currentPeriod = todaySchedule.find(period => {
-        return currentTimeString >= period.startTime && currentTimeString <= period.endTime;
+      const currentTimeString = `${currentTime
+        .getHours()
+        .toString()
+        .padStart(2, "0")}:${currentTime
+        .getMinutes()
+        .toString()
+        .padStart(2, "0")}`;
+
+      const currentPeriod = todaySchedule.find((period) => {
+        return (
+          currentTimeString >= period.startTime &&
+          currentTimeString <= period.endTime
+        );
       });
 
-      const nextPeriod = todaySchedule.find(period => {
+      const nextPeriod = todaySchedule.find((period) => {
         return currentTimeString < period.startTime;
       });
 
@@ -1220,13 +1292,15 @@ class TeacherService {
         teacher: {
           id: teacher._id,
           teacherId: teacher.teacherId,
-          name: `${(teacher.userId as any)?.firstName || ''} ${(teacher.userId as any)?.lastName || ''}`.trim(),
+          name: `${(teacher.userId as any)?.firstName || ""} ${
+            (teacher.userId as any)?.lastName || ""
+          }`.trim(),
           subjects: teacher.subjects,
           grades: teacher.grades,
           sections: teacher.sections,
           designation: teacher.designation,
           isClassTeacher: teacher.isClassTeacher,
-          classTeacherFor: teacher.classTeacherFor
+          classTeacherFor: teacher.classTeacherFor,
         },
         weeklySchedule,
         todaySchedule,
@@ -1236,9 +1310,11 @@ class TeacherService {
           totalPeriodsPerWeek,
           uniqueSubjects: subjectsCount.size,
           uniqueClasses: classesCount.size,
-          averagePeriodsPerDay: Math.round(totalPeriodsPerWeek / 6 * 10) / 10,
-          busyDays: Object.keys(weeklySchedule).filter(day => weeklySchedule[day].length > 0).length
-        }
+          averagePeriodsPerDay: Math.round((totalPeriodsPerWeek / 6) * 10) / 10,
+          busyDays: Object.keys(weeklySchedule).filter(
+            (day) => weeklySchedule[day].length > 0
+          ).length,
+        },
       };
     } catch (error) {
       if (error instanceof AppError) throw error;
@@ -1251,19 +1327,21 @@ class TeacherService {
 
   // Helper method to calculate duration between two time strings
   private calculateDuration(startTime: string, endTime: string): number {
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-    
+    const [startHour, startMin] = startTime.split(":").map(Number);
+    const [endHour, endMin] = endTime.split(":").map(Number);
+
     const startMinutes = startHour * 60 + startMin;
     const endMinutes = endHour * 60 + endMin;
-    
+
     return endMinutes - startMinutes;
   }
 
   async getTeacherClasses(userId: string): Promise<any> {
     try {
-      const teacher = await Teacher.findOne({ userId })
-        .populate('schoolId', 'name');
+      const teacher = await Teacher.findOne({ userId }).populate(
+        "schoolId",
+        "name"
+      );
 
       if (!teacher) {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
@@ -1274,14 +1352,16 @@ class TeacherService {
 
       // Extract unique class combinations from schedules
       const classMap = new Map();
-      
-      schedules.forEach(schedule => {
+
+      schedules.forEach((schedule) => {
         // Get periods where this teacher is assigned
-        const teacherPeriods = schedule.getPeriodsForTeacher(teacher._id.toString());
-        
+        const teacherPeriods = schedule.getPeriodsForTeacher(
+          teacher._id.toString()
+        );
+
         if (teacherPeriods.length > 0) {
           const classKey = `${schedule.grade}-${schedule.section}`;
-          
+
           if (!classMap.has(classKey)) {
             classMap.set(classKey, {
               grade: schedule.grade,
@@ -1290,30 +1370,33 @@ class TeacherService {
               totalPeriods: 0,
               daysScheduled: new Set(),
               studentsCount: 0, // TODO: Get actual count from student collection
-              classId: schedule.classId
+              classId: schedule.classId,
             });
           }
-          
+
           const classData = classMap.get(classKey);
-          
+
           // Add subjects from teacher's periods
-          teacherPeriods.forEach(period => {
+          teacherPeriods.forEach((period) => {
             if (period.subjectId) {
               // Add subject name from populated data or use the ID
-              const subjectName = (period.subjectId as any)?.name || 
-                                teacher.subjects.find(s => s === period.subjectId?.toString()) || 
-                                period.subjectId.toString();
+              const subjectName =
+                (period.subjectId as any)?.name ||
+                teacher.subjects.find(
+                  (s) => s === period.subjectId?.toString()
+                ) ||
+                period.subjectId.toString();
               classData.subjects.add(subjectName);
               classData.totalPeriods++;
             }
           });
-          
+
           classData.daysScheduled.add(schedule.dayOfWeek);
         }
       });
 
       // Convert map to array and format the data
-      const classes = Array.from(classMap.values()).map(classData => ({
+      const classes = Array.from(classMap.values()).map((classData) => ({
         grade: classData.grade,
         section: classData.section,
         className: `Grade ${classData.grade} - Section ${classData.section}`,
@@ -1321,7 +1404,7 @@ class TeacherService {
         totalPeriods: classData.totalPeriods,
         daysScheduled: Array.from(classData.daysScheduled),
         studentsCount: classData.studentsCount,
-        classId: classData.classId
+        classId: classData.classId,
       }));
 
       // Sort classes by grade and then by section
@@ -1336,20 +1419,23 @@ class TeacherService {
         teacher: {
           id: teacher._id,
           teacherId: teacher.teacherId,
-          name: `${(teacher.userId as any)?.firstName || ''} ${(teacher.userId as any)?.lastName || ''}`.trim(),
+          name: `${(teacher.userId as any)?.firstName || ""} ${
+            (teacher.userId as any)?.lastName || ""
+          }`.trim(),
           subjects: teacher.subjects,
           grades: teacher.grades,
           sections: teacher.sections,
           designation: teacher.designation,
           isClassTeacher: teacher.isClassTeacher,
-          classTeacherFor: teacher.classTeacherFor
+          classTeacherFor: teacher.classTeacherFor,
         },
         classes,
         summary: {
           totalClasses: classes.length,
-          totalSubjects: [...new Set(classes.flatMap(c => c.subjects))].length,
-          totalPeriods: classes.reduce((sum, c) => sum + c.totalPeriods, 0)
-        }
+          totalSubjects: [...new Set(classes.flatMap((c) => c.subjects))]
+            .length,
+          totalPeriods: classes.reduce((sum, c) => sum + c.totalPeriods, 0),
+        },
       };
     } catch (error) {
       if (error instanceof AppError) throw error;
@@ -1362,20 +1448,24 @@ class TeacherService {
 
   async getCurrentPeriods(userId: string): Promise<any> {
     try {
-      const teacher = await Teacher.findOne({ userId }).populate('schoolId userId');
+      const teacher = await Teacher.findOne({ userId }).populate(
+        "schoolId userId"
+      );
 
       if (!teacher) {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
       }
 
       const now = new Date();
-      const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      const currentDay = now
+        .toLocaleDateString("en-US", { weekday: "long" })
+        .toLowerCase();
       const currentTime = now.toTimeString().substring(0, 5); // HH:MM format
 
       const schoolTimezone =
         ((teacher.schoolId as any)?.settings?.timezone as string | undefined) ||
         config.school_timezone ||
-        'UTC';
+        "UTC";
       const { dateKey } = normaliseDateKey(now, schoolTimezone);
       const schoolId = (teacher.schoolId as any)?._id || teacher.schoolId;
 
@@ -1384,15 +1474,15 @@ class TeacherService {
         schoolId: teacher.schoolId,
         dayOfWeek: currentDay,
         isActive: true,
-        'periods.teacherId': teacher._id,
+        "periods.teacherId": teacher._id,
       }).populate([
         {
-          path: 'periods.subjectId',
-          select: 'name code',
+          path: "periods.subjectId",
+          select: "name code",
         },
         {
-          path: 'classId',
-          select: 'grade section name',
+          path: "classId",
+          select: "grade section name",
         },
       ]);
 
@@ -1413,9 +1503,22 @@ class TeacherService {
         const isHoliday = holidayEvents.length > 0;
 
         for (const period of schedule.periods) {
-          if (period.teacherId?.toString() === teacher._id.toString() && !period.isBreak) {
-            const status = this.getPeriodTimeStatus(period.startTime!, period.endTime!, now);
-            const canMark = !isHoliday && this.canMarkAttendanceNow(period.startTime!, period.endTime!, now);
+          if (
+            period.teacherId?.toString() === teacher._id.toString() &&
+            !period.isBreak
+          ) {
+            const status = this.getPeriodTimeStatus(
+              period.startTime!,
+              period.endTime!,
+              now
+            );
+            const canMark =
+              !isHoliday &&
+              this.canMarkAttendanceNow(
+                period.startTime!,
+                period.endTime!,
+                now
+              );
             const periodData = {
               scheduleId: schedule._id,
               classId: schedule.classId._id || schedule.classId, // Ensure we get the ObjectId string
@@ -1423,15 +1526,17 @@ class TeacherService {
               section: schedule.section,
               className: `Grade ${schedule.grade} - Section ${schedule.section}`,
               periodNumber: period.periodNumber,
-              subject: period.subjectId ? {
-                id: (period.subjectId as any)._id || period.subjectId,
-                name: (period.subjectId as any).name || 'Unknown Subject',
-                code: (period.subjectId as any).code || 'UNK',
-              } : {
-                id: '',
-                name: 'No Subject',
-                code: 'N/A',
-              },
+              subject: period.subjectId
+                ? {
+                    id: (period.subjectId as any)._id || period.subjectId,
+                    name: (period.subjectId as any).name || "Unknown Subject",
+                    code: (period.subjectId as any).code || "UNK",
+                  }
+                : {
+                    id: "",
+                    name: "No Subject",
+                    code: "N/A",
+                  },
               startTime: period.startTime,
               endTime: period.endTime,
               roomNumber: period.roomNumber,
@@ -1439,7 +1544,7 @@ class TeacherService {
               timeStatus: status,
               isHoliday,
               holidayEvents: holidayEvents.map((event) => ({
-                id: event._id?.toString?.() ?? '',
+                id: event._id?.toString?.() ?? "",
                 title: event.title,
                 date: event.date,
               })),
@@ -1451,7 +1556,7 @@ class TeacherService {
 
             if (canMark) {
               currentPeriods.push(periodData);
-            } else if (status === 'upcoming') {
+            } else if (status === "upcoming") {
               upcomingPeriods.push(periodData);
             } else {
               availablePeriods.push(periodData);
@@ -1461,8 +1566,12 @@ class TeacherService {
       }
 
       const holidayTitles = holidayPeriods
-        .flatMap((period) => period.holidayEvents.map((event) => event.title).filter(Boolean))
-        .filter((value, index, array) => value && array.indexOf(value) === index);
+        .flatMap((period) =>
+          period.holidayEvents.map((event) => event.title).filter(Boolean)
+        )
+        .filter(
+          (value, index, array) => value && array.indexOf(value) === index
+        );
 
       return {
         currentPeriods,
@@ -1470,13 +1579,15 @@ class TeacherService {
         allPeriods: availablePeriods,
         holidayPeriods,
         holidayNotice: holidayTitles.length
-          ? `Attendance is disabled today due to ${holidayTitles.join(', ')}`
+          ? `Attendance is disabled today due to ${holidayTitles.join(", ")}`
           : holidayPeriods.length
-            ? 'Attendance is disabled today due to a school holiday.'
-            : null,
+          ? "Attendance is disabled today due to a school holiday."
+          : null,
         teacherInfo: {
           id: teacher._id,
-          name: `${(teacher.userId as any).firstName} ${(teacher.userId as any).lastName}`,
+          name: `${(teacher.userId as any).firstName} ${
+            (teacher.userId as any).lastName
+          }`,
           teacherId: teacher.teacherId,
         },
         currentTime: now.toISOString(),
@@ -1491,17 +1602,21 @@ class TeacherService {
   }
 
   // Check if attendance can be marked now for the given period
-  private canMarkAttendanceNow(startTime: string, endTime: string, now: Date): boolean {
+  private canMarkAttendanceNow(
+    startTime: string,
+    endTime: string,
+    now: Date
+  ): boolean {
     if (!startTime || !endTime) {
       return false; // Cannot mark attendance without valid time slots
     }
-    
+
     const currentTime = now.toTimeString().substring(0, 5);
-    
+
     // Allow attendance marking from 5 minutes before start time to end time
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-    const [currentHour, currentMin] = currentTime.split(':').map(Number);
+    const [startHour, startMin] = startTime.split(":").map(Number);
+    const [endHour, endMin] = endTime.split(":").map(Number);
+    const [currentHour, currentMin] = currentTime.split(":").map(Number);
 
     const startMinutes = startHour * 60 + startMin - 5; // 5 minutes early
     const endMinutes = endHour * 60 + endMin;
@@ -1511,49 +1626,60 @@ class TeacherService {
   }
 
   // Get period time status (upcoming, current, past)
-  private getPeriodTimeStatus(startTime: string, endTime: string, now: Date): 'upcoming' | 'current' | 'past' {
+  private getPeriodTimeStatus(
+    startTime: string,
+    endTime: string,
+    now: Date
+  ): "upcoming" | "current" | "past" {
     if (!startTime || !endTime) {
-      return 'upcoming'; // Default status if times are not available
+      return "upcoming"; // Default status if times are not available
     }
-    
+
     const currentTime = now.toTimeString().substring(0, 5);
-    
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-    const [currentHour, currentMin] = currentTime.split(':').map(Number);
+
+    const [startHour, startMin] = startTime.split(":").map(Number);
+    const [endHour, endMin] = endTime.split(":").map(Number);
+    const [currentHour, currentMin] = currentTime.split(":").map(Number);
 
     const startMinutes = startHour * 60 + startMin;
     const endMinutes = endHour * 60 + endMin;
     const currentMinutes = currentHour * 60 + currentMin;
 
-    if (currentMinutes < startMinutes) return 'upcoming';
-    if (currentMinutes <= endMinutes) return 'current';
-    return 'past';
+    if (currentMinutes < startMinutes) return "upcoming";
+    if (currentMinutes <= endMinutes) return "current";
+    return "past";
   }
 
-  async markAttendance(userId: string, attendanceData: {
-    classId: string;
-    subjectId: string;
-    grade: number;
-    section: string;
-    date: string;
-    period: number;
-    students: Array<{
-      studentId: string;
-      status: 'present' | 'absent' | 'late' | 'excused';
-    }>;
-  }): Promise<any> {
+  async markAttendance(
+    userId: string,
+    attendanceData: {
+      classId: string;
+      subjectId: string;
+      grade: number;
+      section: string;
+      date: string;
+      period: number;
+      students: Array<{
+        studentId: string;
+        status: "present" | "absent" | "late" | "excused";
+      }>;
+    }
+  ): Promise<any> {
     try {
-      const teacher = await Teacher.findOne({ userId }).populate('schoolId userId');
+      const teacher = await Teacher.findOne({ userId }).populate(
+        "schoolId userId"
+      );
 
       if (!teacher) {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
       }
 
       const now = new Date();
-      const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      const currentDay = now
+        .toLocaleDateString("en-US", { weekday: "long" })
+        .toLowerCase();
       const attendanceDate = new Date(attendanceData.date);
-      
+
       // Verify teacher has permission for this subject/grade/section
       const schedule = await Schedule.findOne({
         schoolId: teacher.schoolId,
@@ -1561,49 +1687,71 @@ class TeacherService {
         section: attendanceData.section,
         dayOfWeek: currentDay,
         isActive: true,
-        'periods': {
+        periods: {
           $elemMatch: {
             periodNumber: attendanceData.period,
             teacherId: teacher._id,
             subjectId: attendanceData.subjectId,
-          }
-        }
-      }).populate('periods.subjectId');
+          },
+        },
+      }).populate("periods.subjectId");
 
       if (!schedule) {
-        throw new AppError(httpStatus.FORBIDDEN, "You are not authorized to mark attendance for this class/subject/period");
+        throw new AppError(
+          httpStatus.FORBIDDEN,
+          "You are not authorized to mark attendance for this class/subject/period"
+        );
       }
 
       // Find the specific period
-      const period = schedule.periods.find(p => {
+      const period = schedule.periods.find((p) => {
         // Handle both populated and non-populated subjectId
         let subjectId: string;
-        if (p.subjectId && typeof p.subjectId === 'object' && '_id' in p.subjectId) {
+        if (
+          p.subjectId &&
+          typeof p.subjectId === "object" &&
+          "_id" in p.subjectId
+        ) {
           // If populated (object with _id)
           subjectId = (p.subjectId as any)._id.toString();
         } else if (p.subjectId) {
           // If not populated (just ObjectId)
           subjectId = String(p.subjectId);
         } else {
-          subjectId = '';
+          subjectId = "";
         }
-        
-        return p.periodNumber === attendanceData.period &&
+
+        return (
+          p.periodNumber === attendanceData.period &&
           p.teacherId?.toString() === teacher._id.toString() &&
-          subjectId === attendanceData.subjectId;
+          subjectId === attendanceData.subjectId
+        );
       });
 
       if (!period) {
-        throw new AppError(httpStatus.FORBIDDEN, "Period not found in your schedule");
+        throw new AppError(
+          httpStatus.FORBIDDEN,
+          "Period not found in your schedule"
+        );
       }
 
       // Verify current time is within the period window (allow marking until end time)
       if (!this.canMarkAttendanceNow(period.startTime!, period.endTime!, now)) {
-        const timeStatus = this.getPeriodTimeStatus(period.startTime!, period.endTime!, now);
-        if (timeStatus === 'past') {
-          throw new AppError(httpStatus.BAD_REQUEST, `Attendance marking window has closed. Period ended at ${period.endTime}`);
+        const timeStatus = this.getPeriodTimeStatus(
+          period.startTime!,
+          period.endTime!,
+          now
+        );
+        if (timeStatus === "past") {
+          throw new AppError(
+            httpStatus.BAD_REQUEST,
+            `Attendance marking window has closed. Period ended at ${period.endTime}`
+          );
         } else {
-          throw new AppError(httpStatus.BAD_REQUEST, `Attendance marking window has not started yet. Period starts at ${period.startTime}`);
+          throw new AppError(
+            httpStatus.BAD_REQUEST,
+            `Attendance marking window has not started yet. Period starts at ${period.startTime}`
+          );
         }
       }
 
@@ -1619,10 +1767,12 @@ class TeacherService {
 
       // Get attendance stats from the saved record
       const stats = savedAttendance.getAttendanceStats();
-      
+
       // Get absent students for parent notification
-      const absentStudents = savedAttendance.students.filter(s => s.status === 'absent');
-      
+      const absentStudents = savedAttendance.students.filter(
+        (s) => s.status === "absent"
+      );
+
       // Send notifications to parents of absent students
       if (absentStudents.length > 0) {
         try {
@@ -1637,7 +1787,7 @@ class TeacherService {
             });
           }
         } catch (notificationError) {
-          console.error('Failed to send notifications:', notificationError);
+          console.error("Failed to send notifications:", notificationError);
           // Don't fail the attendance marking if notification fails
         }
       }
@@ -1664,13 +1814,13 @@ class TeacherService {
       if (error instanceof AppError) throw error;
 
       if (error instanceof Error) {
-        const message = error.message || 'Failed to mark attendance';
+        const message = error.message || "Failed to mark attendance";
 
-        if (message.includes('locked')) {
+        if (message.includes("locked")) {
           throw new AppError(httpStatus.FORBIDDEN, message);
         }
 
-        if (message.includes('Cannot mark attendance')) {
+        if (message.includes("Cannot mark attendance")) {
           throw new AppError(httpStatus.BAD_REQUEST, message);
         }
 
@@ -1682,23 +1832,33 @@ class TeacherService {
 
       throw new AppError(
         httpStatus.INTERNAL_SERVER_ERROR,
-        'Failed to mark attendance due to an unexpected error'
+        "Failed to mark attendance due to an unexpected error"
       );
     }
   }
 
-  async getStudentsForAttendance(userId: string, classId: string, subjectId: string, period: number): Promise<any> {
+  async getStudentsForAttendance(
+    userId: string,
+    classId: string,
+    subjectId: string,
+    period: number
+  ): Promise<any> {
     try {
       // Validate ObjectId parameters
       if (!classId || !Types.ObjectId.isValid(classId)) {
         throw new AppError(httpStatus.BAD_REQUEST, "Invalid classId provided");
       }
-      
+
       if (!subjectId || !Types.ObjectId.isValid(subjectId)) {
-        throw new AppError(httpStatus.BAD_REQUEST, "Invalid subjectId provided");
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          "Invalid subjectId provided"
+        );
       }
 
-      const teacher = await Teacher.findOne({ userId }).populate('schoolId userId');
+      const teacher = await Teacher.findOne({ userId }).populate(
+        "schoolId userId"
+      );
 
       if (!teacher) {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
@@ -1706,33 +1866,38 @@ class TeacherService {
 
       // Verify teacher has permission to mark attendance for this class/subject/period
       const now = new Date();
-      const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      const currentDay = now
+        .toLocaleDateString("en-US", { weekday: "long" })
+        .toLowerCase();
 
       const schedule = await Schedule.findOne({
         schoolId: teacher.schoolId,
         classId: new Types.ObjectId(classId),
         dayOfWeek: currentDay,
         isActive: true,
-        'periods': {
+        periods: {
           $elemMatch: {
             periodNumber: period,
             teacherId: teacher._id,
             subjectId: new Types.ObjectId(subjectId),
-          }
-        }
+          },
+        },
       }).populate([
         {
-          path: 'periods.subjectId',
-          select: 'name code',
+          path: "periods.subjectId",
+          select: "name code",
         },
         {
-          path: 'classId',
-          select: 'grade section name',
-        }
+          path: "classId",
+          select: "grade section name",
+        },
       ]);
 
       if (!schedule) {
-        throw new AppError(httpStatus.FORBIDDEN, "You are not authorized to mark attendance for this class/subject/period");
+        throw new AppError(
+          httpStatus.FORBIDDEN,
+          "You are not authorized to mark attendance for this class/subject/period"
+        );
       }
 
       // Get students from the specified class
@@ -1742,17 +1907,20 @@ class TeacherService {
         section: schedule.section,
         isActive: true,
       })
-        .populate('userId', 'firstName lastName')
+        .populate("userId", "firstName lastName")
         .sort({ rollNumber: 1 });
 
       // Check if attendance already marked today
       const schoolTimezone =
         ((teacher.schoolId as any)?.settings?.timezone as string | undefined) ||
         config.school_timezone ||
-        'UTC';
-      const { date: attendanceDate, dateKey } = normaliseDateKey(now, schoolTimezone);
-      const dateString = now.toISOString().split('T')[0]; // Use current date for display
-      
+        "UTC";
+      const { date: attendanceDate, dateKey } = normaliseDateKey(
+        now,
+        schoolTimezone
+      );
+      const dateString = now.toISOString().split("T")[0]; // Use current date for display
+
       const schoolId = (teacher.schoolId as any)?._id || teacher.schoolId;
       const holidayEvents = await findHolidayEventsForClass({
         schoolId,
@@ -1766,7 +1934,7 @@ class TeacherService {
         const titles = holidayEvents
           .map((event) => event.title)
           .filter((title): title is string => Boolean(title));
-        const label = titles.length ? ` (${titles.join(', ')})` : '';
+        const label = titles.length ? ` (${titles.join(", ")})` : "";
 
         throw new AppError(
           httpStatus.FORBIDDEN,
@@ -1784,7 +1952,7 @@ class TeacherService {
 
       const attendanceMap = new Map();
       if (existingAttendance) {
-        existingAttendance.students.forEach(student => {
+        existingAttendance.students.forEach((student) => {
           attendanceMap.set(student.studentId.toString(), student.status);
         });
       }
@@ -1795,33 +1963,44 @@ class TeacherService {
         dateKey,
         studentId: { $in: studentObjectIds },
       }).select(
-        'studentId autoStatus teacherStatus finalStatus finalSource teacherOverride autoMarkedAt teacherMarkedAt finalized'
+        "studentId autoStatus teacherStatus finalStatus finalSource teacherOverride autoMarkedAt teacherMarkedAt finalized"
       );
 
-      const dayAttendanceMap = new Map<string, typeof dayAttendanceDocs[number]>();
+      const dayAttendanceMap = new Map<
+        string,
+        (typeof dayAttendanceDocs)[number]
+      >();
       dayAttendanceDocs.forEach((doc) => {
         dayAttendanceMap.set(doc.studentId.toString(), doc);
       });
 
-      const studentsWithAttendance = students.map(student => ({
+      const studentsWithAttendance = students.map((student) => ({
         id: student._id.toString(),
         studentId: student.studentId,
-        name: `${(student.userId as any).firstName} ${(student.userId as any).lastName}`,
+        name: `${(student.userId as any).firstName} ${
+          (student.userId as any).lastName
+        }`,
         rollNumber: student.rollNumber,
         grade: student.grade,
         section: student.section,
-        autoStatus: dayAttendanceMap.get(student._id.toString())?.autoStatus || null,
-        finalStatus: dayAttendanceMap.get(student._id.toString())?.finalStatus || null,
-        finalSource: dayAttendanceMap.get(student._id.toString())?.finalSource || null,
-        teacherOverride: dayAttendanceMap.get(student._id.toString())?.teacherOverride || false,
+        autoStatus:
+          dayAttendanceMap.get(student._id.toString())?.autoStatus || null,
+        finalStatus:
+          dayAttendanceMap.get(student._id.toString())?.finalStatus || null,
+        finalSource:
+          dayAttendanceMap.get(student._id.toString())?.finalSource || null,
+        teacherOverride:
+          dayAttendanceMap.get(student._id.toString())?.teacherOverride ||
+          false,
         currentStatus: attendanceMap.get(student._id.toString()) || null,
         hasPhoto: (student as any).photos && (student as any).photos.length > 0,
       }));
 
-      const periodInfo = schedule.periods.find(p => 
-        p.periodNumber === period &&
-        p.teacherId?.toString() === teacher._id.toString() &&
-        p.subjectId?.toString() === subjectId
+      const periodInfo = schedule.periods.find(
+        (p) =>
+          p.periodNumber === period &&
+          p.teacherId?.toString() === teacher._id.toString() &&
+          p.subjectId?.toString() === subjectId
       );
 
       return {
@@ -1834,16 +2013,26 @@ class TeacherService {
         subjectInfo: periodInfo?.subjectId,
         periodInfo: {
           number: period,
-          startTime: periodInfo?.startTime || '00:00',
-          endTime: periodInfo?.endTime || '00:00',
-          canMarkAttendance: this.canMarkAttendanceNow(periodInfo?.startTime || '00:00', periodInfo?.endTime || '00:00', now),
-          timeStatus: this.getPeriodTimeStatus(periodInfo?.startTime || '00:00', periodInfo?.endTime || '00:00', now),
+          startTime: periodInfo?.startTime || "00:00",
+          endTime: periodInfo?.endTime || "00:00",
+          canMarkAttendance: this.canMarkAttendanceNow(
+            periodInfo?.startTime || "00:00",
+            periodInfo?.endTime || "00:00",
+            now
+          ),
+          timeStatus: this.getPeriodTimeStatus(
+            periodInfo?.startTime || "00:00",
+            periodInfo?.endTime || "00:00",
+            now
+          ),
         },
         students: studentsWithAttendance,
         attendanceAlreadyMarked: existingAttendance !== null,
         teacherInfo: {
           id: teacher._id,
-          name: `${(teacher.userId as any).firstName} ${(teacher.userId as any).lastName}`,
+          name: `${(teacher.userId as any).firstName} ${
+            (teacher.userId as any).lastName
+          }`,
         },
         date: dateString,
         dateKey,
@@ -1860,27 +2049,31 @@ class TeacherService {
   // Get students for attendance based on teacher's current schedule (simplified)
   async getMyStudentsForAttendance(userId: string): Promise<any> {
     try {
-      const teacher = await Teacher.findOne({ userId }).populate('schoolId userId');
+      const teacher = await Teacher.findOne({ userId }).populate(
+        "schoolId userId"
+      );
 
       if (!teacher) {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
       }
 
       const now = new Date();
-      const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      const currentDay = now
+        .toLocaleDateString("en-US", { weekday: "long" })
+        .toLowerCase();
 
       // Get all schedules for this teacher for today
       const schedules = await Schedule.find({
         schoolId: teacher.schoolId,
         dayOfWeek: currentDay,
         isActive: true,
-        'periods.teacherId': teacher._id,
-      }).populate('classId');
+        "periods.teacherId": teacher._id,
+      }).populate("classId");
 
       const schoolTimezone =
         ((teacher.schoolId as any)?.settings?.timezone as string | undefined) ||
         config.school_timezone ||
-        'UTC';
+        "UTC";
       const { dateKey } = normaliseDateKey(now, schoolTimezone);
       const schoolId = (teacher.schoolId as any)?._id || teacher.schoolId;
 
@@ -1901,7 +2094,7 @@ class TeacherService {
           grade: schedule.grade,
           section: schedule.section,
           isActive: true,
-        }).populate('userId', 'firstName lastName profilePhoto');
+        }).populate("userId", "firstName lastName profilePhoto");
 
         const classEntry = {
           classId: schedule.classId._id,
@@ -1910,15 +2103,17 @@ class TeacherService {
           className: `Grade ${schedule.grade} - Section ${schedule.section}`,
           isHoliday: holidayEvents.length > 0,
           holidayEvents: holidayEvents.map((event) => ({
-            id: event._id?.toString?.() ?? '',
+            id: event._id?.toString?.() ?? "",
             title: event.title,
             date: event.date,
           })),
-          students: students.map(student => ({
+          students: students.map((student) => ({
             id: student._id,
             studentId: student.studentId,
             rollNumber: student.rollNumber,
-            name: `${(student.userId as any).firstName} ${(student.userId as any).lastName}`,
+            name: `${(student.userId as any).firstName} ${
+              (student.userId as any).lastName
+            }`,
             profilePhoto: (student.userId as any).profilePhoto,
             grade: student.grade,
             section: student.section,
@@ -1939,22 +2134,28 @@ class TeacherService {
       }
 
       const holidayTitles = holidayClasses
-        .flatMap((cls) => cls.holidayEvents.map((event) => event.title).filter(Boolean))
-        .filter((value, index, array) => value && array.indexOf(value) === index);
+        .flatMap((cls) =>
+          cls.holidayEvents.map((event) => event.title).filter(Boolean)
+        )
+        .filter(
+          (value, index, array) => value && array.indexOf(value) === index
+        );
 
       return {
         teacherInfo: {
           id: teacher._id,
-          name: `${(teacher.userId as any).firstName} ${(teacher.userId as any).lastName}`,
+          name: `${(teacher.userId as any).firstName} ${
+            (teacher.userId as any).lastName
+          }`,
         },
         classes: classesWithStudents,
         holidayClasses,
         holidayNotice: holidayTitles.length
-          ? `Attendance is disabled today due to ${holidayTitles.join(', ')}`
+          ? `Attendance is disabled today due to ${holidayTitles.join(", ")}`
           : holidayClasses.length
-            ? 'Attendance is disabled today due to a school holiday.'
-            : null,
-        date: now.toISOString().split('T')[0],
+          ? "Attendance is disabled today due to a school holiday."
+          : null,
+        date: now.toISOString().split("T")[0],
       };
     } catch (error) {
       if (error instanceof AppError) throw error;
@@ -1965,9 +2166,13 @@ class TeacherService {
     }
   }
 
-  async assignHomework(userId: string, homeworkData: any, attachments?: Express.Multer.File[]): Promise<any> {
+  async assignHomework(
+    userId: string,
+    homeworkData: any,
+    attachments?: Express.Multer.File[]
+  ): Promise<any> {
     try {
-      const teacher = await Teacher.findOne({ userId }).populate('schoolId');
+      const teacher = await Teacher.findOne({ userId }).populate("schoolId");
 
       if (!teacher) {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
@@ -1977,24 +2182,29 @@ class TeacherService {
       let attachmentUrls: string[] = [];
       if (attachments && attachments.length > 0) {
         try {
-          const { uploadToCloudinary } = await import('../../utils/cloudinaryUtils');
-          
+          const { uploadToCloudinary } = await import(
+            "../../utils/cloudinaryUtils"
+          );
+
           for (const file of attachments) {
             const uploadResult = await uploadToCloudinary(file.buffer, {
-              folder: 'homework-attachments',
-              resource_type: 'auto',
+              folder: "homework-attachments",
+              resource_type: "auto",
               use_filename: true,
               unique_filename: true,
             });
             attachmentUrls.push(uploadResult.secure_url);
           }
         } catch (error) {
-          throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to upload attachments');
+          throw new AppError(
+            httpStatus.INTERNAL_SERVER_ERROR,
+            "Failed to upload attachments"
+          );
         }
       }
 
       // Import Homework model
-      const { Homework } = await import('../homework/homework.model');
+      const { Homework } = await import("../homework/homework.model");
 
       // Create homework data
       const homework = new Homework({
@@ -2006,20 +2216,22 @@ class TeacherService {
         title: homeworkData.title,
         description: homeworkData.description,
         instructions: homeworkData.instructions,
-        homeworkType: homeworkData.homeworkType || 'assignment',
-        priority: homeworkData.priority || 'medium',
+        homeworkType: homeworkData.homeworkType || "assignment",
+        priority: homeworkData.priority || "medium",
         assignedDate: new Date(),
         dueDate: new Date(homeworkData.dueDate),
         estimatedDuration: parseInt(homeworkData.estimatedDuration) || 60,
         totalMarks: parseInt(homeworkData.totalMarks) || 100,
         passingMarks: parseInt(homeworkData.passingMarks) || 40,
         attachments: attachmentUrls,
-        submissionType: homeworkData.submissionType || 'both',
+        submissionType: homeworkData.submissionType || "both",
         allowLateSubmission: homeworkData.allowLateSubmission !== false,
         latePenalty: parseInt(homeworkData.latePenalty) || 10,
         maxLateDays: parseInt(homeworkData.maxLateDays) || 3,
         isGroupWork: homeworkData.isGroupWork === true,
-        maxGroupSize: homeworkData.isGroupWork ? parseInt(homeworkData.maxGroupSize) || 4 : undefined,
+        maxGroupSize: homeworkData.isGroupWork
+          ? parseInt(homeworkData.maxGroupSize) || 4
+          : undefined,
         rubric: homeworkData.rubric || [],
         tags: homeworkData.tags || [],
         isPublished: homeworkData.isPublished === true,
@@ -2030,15 +2242,15 @@ class TeacherService {
       // Populate the homework with related data
       const populatedHomework = await Homework.findById(homework._id)
         .populate({
-          path: 'teacherId',
-          select: 'userId teacherId',
+          path: "teacherId",
+          select: "userId teacherId",
           populate: {
-            path: 'userId',
-            select: 'firstName lastName'
-          }
+            path: "userId",
+            select: "firstName lastName",
+          },
         })
-        .populate('subjectId', 'name code')
-        .populate('schoolId', 'name');
+        .populate("subjectId", "name code")
+        .populate("schoolId", "name");
 
       // Send notifications to parents about homework assignment
       if (homework.isPublished) {
@@ -2051,19 +2263,24 @@ class TeacherService {
             isActive: true,
           });
 
-          const studentIds = students.map(s => s._id.toString());
-          
+          const studentIds = students.map((s) => s._id.toString());
+
           if (studentIds.length > 0) {
             await Notification.createHomeworkAlert({
               studentIds: studentIds,
               teacherId: teacher._id.toString(),
               homeworkTitle: homework.title,
               dueDate: homework.dueDate,
-              subjectName: (populatedHomework?.subjectId as any)?.name || 'Unknown Subject',
+              subjectName:
+                (populatedHomework?.subjectId as any)?.name ||
+                "Unknown Subject",
             });
           }
         } catch (notificationError) {
-          console.error('Failed to send homework notifications:', notificationError);
+          console.error(
+            "Failed to send homework notifications:",
+            notificationError
+          );
           // Don't fail the homework assignment if notification fails
         }
       }
@@ -2071,7 +2288,7 @@ class TeacherService {
       return {
         id: homework._id,
         ...populatedHomework?.toJSON(),
-        message: 'Homework assigned successfully'
+        message: "Homework assigned successfully",
       };
     } catch (error) {
       if (error instanceof AppError) throw error;
@@ -2091,7 +2308,7 @@ class TeacherService {
       }
 
       // Import Homework model
-      const { Homework } = await import('../homework/homework.model');
+      const { Homework } = await import("../homework/homework.model");
 
       // Create query for teacher's homework
       const query: any = { teacherId: teacher._id };
@@ -2107,7 +2324,7 @@ class TeacherService {
         query.subjectId = filters.subjectId;
       }
       if (filters?.isPublished !== undefined) {
-        query.isPublished = filters.isPublished === 'true';
+        query.isPublished = filters.isPublished === "true";
       }
       if (filters?.priority) {
         query.priority = filters.priority;
@@ -2130,15 +2347,15 @@ class TeacherService {
       // Get homework assignments sorted by createdAt/updatedAt (newest first)
       const assignments = await Homework.find(query)
         .populate({
-          path: 'teacherId',
-          select: 'userId teacherId',
+          path: "teacherId",
+          select: "userId teacherId",
           populate: {
-            path: 'userId',
-            select: 'firstName lastName'
-          }
+            path: "userId",
+            select: "firstName lastName",
+          },
         })
-        .populate('subjectId', 'name code')
-        .populate('schoolId', 'name')
+        .populate("subjectId", "name code")
+        .populate("schoolId", "name")
         .sort({ updatedAt: -1, createdAt: -1 }) // Newest first as requested
         .lean();
 
@@ -2147,7 +2364,7 @@ class TeacherService {
         assignments.map(async (assignment) => {
           const homework = await Homework.findById(assignment._id);
           const stats = homework ? await homework.getSubmissionStats() : null;
-          
+
           return {
             ...assignment,
             submissionStats: stats,
@@ -2163,32 +2380,41 @@ class TeacherService {
       // Calculate summary statistics
       const summary = {
         total: assignments.length,
-        published: assignments.filter(a => a.isPublished).length,
-        draft: assignments.filter(a => !a.isPublished).length,
-        overdue: assignmentsWithStats.filter(a => a.isOverdue).length,
-        dueToday: assignmentsWithStats.filter(a => a.isDueToday).length,
-        upcoming: assignmentsWithStats.filter(a => a.daysUntilDue > 0 && a.daysUntilDue <= 7).length,
+        published: assignments.filter((a) => a.isPublished).length,
+        draft: assignments.filter((a) => !a.isPublished).length,
+        overdue: assignmentsWithStats.filter((a) => a.isOverdue).length,
+        dueToday: assignmentsWithStats.filter((a) => a.isDueToday).length,
+        upcoming: assignmentsWithStats.filter(
+          (a) => a.daysUntilDue > 0 && a.daysUntilDue <= 7
+        ).length,
         byPriority: {
-          urgent: assignments.filter(a => a.priority === 'urgent').length,
-          high: assignments.filter(a => a.priority === 'high').length,
-          medium: assignments.filter(a => a.priority === 'medium').length,
-          low: assignments.filter(a => a.priority === 'low').length,
+          urgent: assignments.filter((a) => a.priority === "urgent").length,
+          high: assignments.filter((a) => a.priority === "high").length,
+          medium: assignments.filter((a) => a.priority === "medium").length,
+          low: assignments.filter((a) => a.priority === "low").length,
         },
         byType: {
-          assignment: assignments.filter(a => a.homeworkType === 'assignment').length,
-          project: assignments.filter(a => a.homeworkType === 'project').length,
-          reading: assignments.filter(a => a.homeworkType === 'reading').length,
-          practice: assignments.filter(a => a.homeworkType === 'practice').length,
-          research: assignments.filter(a => a.homeworkType === 'research').length,
-          presentation: assignments.filter(a => a.homeworkType === 'presentation').length,
-          other: assignments.filter(a => a.homeworkType === 'other').length,
-        }
+          assignment: assignments.filter((a) => a.homeworkType === "assignment")
+            .length,
+          project: assignments.filter((a) => a.homeworkType === "project")
+            .length,
+          reading: assignments.filter((a) => a.homeworkType === "reading")
+            .length,
+          practice: assignments.filter((a) => a.homeworkType === "practice")
+            .length,
+          research: assignments.filter((a) => a.homeworkType === "research")
+            .length,
+          presentation: assignments.filter(
+            (a) => a.homeworkType === "presentation"
+          ).length,
+          other: assignments.filter((a) => a.homeworkType === "other").length,
+        },
       };
 
       return {
         teacherId: teacher._id,
         assignments: assignmentsWithStats,
-        summary
+        summary,
       };
     } catch (error) {
       if (error instanceof AppError) throw error;
@@ -2201,46 +2427,67 @@ class TeacherService {
 
   async issueWarning(userId: string, warningData: any): Promise<any> {
     try {
-      const teacher = await Teacher.findOne({ userId }).populate('schoolId');
+      const teacher = await Teacher.findOne({ userId }).populate("schoolId");
 
       if (!teacher) {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
       }
 
-      const { DisciplinaryAction } = await import('../disciplinary/disciplinary.model');
-      
+      const { DisciplinaryAction } = await import(
+        "../disciplinary/disciplinary.model"
+      );
+
       // Create disciplinary action for each selected student
       const actions: any[] = [];
-      
+
       for (const studentId of warningData.studentIds) {
         // Verify teacher has permission for the student (basic check)
         const student = await Student.findById(studentId);
-        if (!student || student.schoolId.toString() !== teacher.schoolId._id.toString()) {
-          throw new AppError(httpStatus.FORBIDDEN, `You don't have permission for student ${studentId}`);
+        if (
+          !student ||
+          student.schoolId.toString() !== teacher.schoolId._id.toString()
+        ) {
+          throw new AppError(
+            httpStatus.FORBIDDEN,
+            `You don't have permission for student ${studentId}`
+          );
         }
 
         const action = await DisciplinaryAction.create({
           schoolId: teacher.schoolId._id,
           studentId,
           teacherId: teacher._id,
-          actionType: warningData.actionType || 'warning',
+          actionType: warningData.actionType || "warning",
           severity: warningData.severity,
           category: warningData.category,
           title: warningData.title || warningData.reason,
           description: warningData.description || warningData.reason,
           reason: warningData.reason,
-          incidentDate: warningData.incidentDate ? new Date(warningData.incidentDate) : new Date(),
+          incidentDate: warningData.incidentDate
+            ? new Date(warningData.incidentDate)
+            : new Date(),
           actionTaken: warningData.actionTaken,
           followUpRequired: warningData.followUpRequired || false,
-          followUpDate: warningData.followUpDate ? new Date(warningData.followUpDate) : undefined,
+          followUpDate: warningData.followUpDate
+            ? new Date(warningData.followUpDate)
+            : undefined,
           isAppealable: warningData.isAppealable !== false,
-          appealDeadline: warningData.appealDeadline ? new Date(warningData.appealDeadline) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          appealDeadline: warningData.appealDeadline
+            ? new Date(warningData.appealDeadline)
+            : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           witnesses: warningData.witnesses || [],
           evidenceAttachments: warningData.evidenceAttachments || [],
-          points: warningData.points || (warningData.severity === 'high' ? 10 : warningData.severity === 'medium' ? 5 : 2),
+          points:
+            warningData.points ||
+            (warningData.severity === "high"
+              ? 10
+              : warningData.severity === "medium"
+              ? 5
+              : 2),
           warrantLevel: warningData.warrantLevel,
-          isRedWarrant: warningData.actionType === 'red_warrant',
-          academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
+          isRedWarrant: warningData.actionType === "red_warrant",
+          academicYear:
+            new Date().getFullYear() + "-" + (new Date().getFullYear() + 1),
           createdBy: teacher.userId,
         });
 
@@ -2249,13 +2496,13 @@ class TeacherService {
           try {
             await (action as any).notifyParents();
           } catch (error) {
-            console.error('Failed to notify parents:', error);
+            console.error("Failed to notify parents:", error);
           }
         }
         try {
           await (action as any).notifyStudent();
         } catch (error) {
-          console.error('Failed to notify student:', error);
+          console.error("Failed to notify student:", error);
         }
 
         actions.push(action);
@@ -2264,14 +2511,14 @@ class TeacherService {
       return {
         success: true,
         actionsCreated: actions.length,
-        actions: actions.map(action => ({
+        actions: actions.map((action) => ({
           id: (action._id as any)?.toString() || action.id,
           studentId: action.studentId,
           actionType: action.actionType,
           severity: action.severity,
           title: action.title,
           isRedWarrant: action.isRedWarrant,
-          issuedAt: action.issuedDate
+          issuedAt: action.issuedDate,
         })),
         teacherId: teacher._id,
       };
@@ -2286,40 +2533,53 @@ class TeacherService {
 
   async issuePunishment(userId: string, punishmentData: any): Promise<any> {
     try {
-      const teacher = await Teacher.findOne({ userId }).populate('schoolId');
+      const teacher = await Teacher.findOne({ userId }).populate("schoolId");
 
       if (!teacher) {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
       }
 
-      const { DisciplinaryAction } = await import('../disciplinary/disciplinary.model');
-      
+      const { DisciplinaryAction } = await import(
+        "../disciplinary/disciplinary.model"
+      );
+
       // Create red warrant type punishment for each student
       const actions: any[] = [];
-      
+
       for (const studentId of punishmentData.studentIds) {
         // Verify teacher has permission
         const student = await Student.findById(studentId);
-        if (!student || student.schoolId.toString() !== teacher.schoolId._id.toString()) {
-          throw new AppError(httpStatus.FORBIDDEN, `You don't have permission for student ${studentId}`);
+        if (
+          !student ||
+          student.schoolId.toString() !== teacher.schoolId._id.toString()
+        ) {
+          throw new AppError(
+            httpStatus.FORBIDDEN,
+            `You don't have permission for student ${studentId}`
+          );
         }
 
         // Validate required fields
-        if (!punishmentData.reason || punishmentData.reason.trim() === '') {
-          throw new AppError(httpStatus.BAD_REQUEST, "Reason is required for disciplinary action");
+        if (!punishmentData.reason || punishmentData.reason.trim() === "") {
+          throw new AppError(
+            httpStatus.BAD_REQUEST,
+            "Reason is required for disciplinary action"
+          );
         }
 
         const action = await DisciplinaryAction.create({
           schoolId: teacher.schoolId._id,
           studentId,
           teacherId: teacher._id,
-          actionType: 'red_warrant',
-          severity: punishmentData.severity || 'high',
-          category: punishmentData.category || 'discipline',
+          actionType: "red_warrant",
+          severity: punishmentData.severity || "high",
+          category: punishmentData.category || "discipline",
           title: `RED WARRANT: ${punishmentData.title}`,
           description: punishmentData.description,
           reason: punishmentData.reason.trim(),
-          incidentDate: punishmentData.incidentDate ? new Date(punishmentData.incidentDate) : new Date(),
+          incidentDate: punishmentData.incidentDate
+            ? new Date(punishmentData.incidentDate)
+            : new Date(),
           actionTaken: punishmentData.actionTaken,
           followUpRequired: true,
           followUpDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days
@@ -2327,10 +2587,11 @@ class TeacherService {
           appealDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
           witnesses: punishmentData.witnesses || [],
           evidenceAttachments: punishmentData.evidenceAttachments || [],
-          points: punishmentData.severity === 'critical' ? 50 : 30,
-          warrantLevel: 'red',
+          points: punishmentData.severity === "critical" ? 50 : 30,
+          warrantLevel: "red",
           isRedWarrant: true,
-          academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
+          academicYear:
+            new Date().getFullYear() + "-" + (new Date().getFullYear() + 1),
           createdBy: teacher.userId,
         });
 
@@ -2339,7 +2600,7 @@ class TeacherService {
           await (action as any).notifyParents();
           await (action as any).notifyStudent();
         } catch (error) {
-          console.error('Failed to send notifications:', error);
+          console.error("Failed to send notifications:", error);
         }
 
         actions.push(action);
@@ -2348,13 +2609,17 @@ class TeacherService {
       return {
         success: true,
         redWarrantsIssued: actions.length,
-        actions: actions.map(action => ({
+        actions: actions.map((action) => ({
           id: (action._id as any)?.toString() || action.id,
           studentId: action.studentId,
-          warrantNumber: `RW-${Date.now()}-${((action._id as any)?.toString() || '').slice(-6).toUpperCase()}`,
+          warrantNumber: `RW-${Date.now()}-${(
+            (action._id as any)?.toString() || ""
+          )
+            .slice(-6)
+            .toUpperCase()}`,
           severity: action.severity,
           title: action.title,
-          issuedAt: action.issuedDate
+          issuedAt: action.issuedDate,
         })),
         teacherId: teacher._id,
         urgentNotificationsSent: true,
@@ -2376,28 +2641,34 @@ class TeacherService {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
       }
 
-      const { DisciplinaryAction } = await import('../disciplinary/disciplinary.model');
-      
+      const { DisciplinaryAction } = await import(
+        "../disciplinary/disciplinary.model"
+      );
+
       const query: any = { teacherId: teacher._id };
-      
+
       // Apply filters
       if (filters?.actionType) query.actionType = filters.actionType;
       if (filters?.severity) query.severity = filters.severity;
       if (filters?.status) query.status = filters.status;
-      if (filters?.isRedWarrant !== undefined) query.isRedWarrant = filters.isRedWarrant === 'true';
-      
+      if (filters?.isRedWarrant !== undefined)
+        query.isRedWarrant = filters.isRedWarrant === "true";
+
       const actions = await DisciplinaryAction.find(query)
         .populate({
-          path: 'studentId',
-          select: 'userId rollNumber grade section',
+          path: "studentId",
+          select: "userId rollNumber grade section",
           populate: {
-            path: 'userId',
-            select: 'firstName lastName'
-          }
+            path: "userId",
+            select: "firstName lastName",
+          },
         })
         .sort({ issuedDate: -1 });
 
-      const stats = await DisciplinaryAction.getDisciplinaryStats(teacher.schoolId.toString(), { teacherId: teacher._id });
+      const stats = await DisciplinaryAction.getDisciplinaryStats(
+        teacher.schoolId.toString(),
+        { teacherId: teacher._id }
+      );
 
       return {
         teacherId: teacher._id,
@@ -2406,13 +2677,13 @@ class TeacherService {
           const user = student?.userId as any;
           return {
             id: action._id,
-            studentName: user ? `${user.firstName} ${user.lastName}` : 'N/A',
-            studentRoll: student?.rollNumber || 'N/A',
-            grade: student?.grade || 'N/A',
-            section: student?.section || 'N/A',
-          actionType: action.actionType,
-          severity: action.severity,
-          category: action.category,
+            studentName: user ? `${user.firstName} ${user.lastName}` : "N/A",
+            studentRoll: student?.rollNumber || "N/A",
+            grade: student?.grade || "N/A",
+            section: student?.section || "N/A",
+            actionType: action.actionType,
+            severity: action.severity,
+            category: action.category,
             title: action.title,
             description: action.description,
             reason: action.reason,
@@ -2424,8 +2695,12 @@ class TeacherService {
             studentAcknowledged: action.studentAcknowledged,
             followUpRequired: action.followUpRequired,
             followUpDate: action.followUpDate,
-            canAppeal: (action as any).canAppeal ? (action as any).canAppeal() : false,
-            isOverdue: (action as any).isOverdue ? (action as any).isOverdue() : false,
+            canAppeal: (action as any).canAppeal
+              ? (action as any).canAppeal()
+              : false,
+            isOverdue: (action as any).isOverdue
+              ? (action as any).isOverdue()
+              : false,
           };
         }),
         stats,
@@ -2439,7 +2714,11 @@ class TeacherService {
     }
   }
 
-  async resolveDisciplinaryAction(userId: string, actionId: string, resolutionNotes: string): Promise<any> {
+  async resolveDisciplinaryAction(
+    userId: string,
+    actionId: string,
+    resolutionNotes: string
+  ): Promise<any> {
     try {
       const teacher = await Teacher.findOne({ userId });
 
@@ -2447,21 +2726,29 @@ class TeacherService {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
       }
 
-      const { DisciplinaryAction } = await import('../disciplinary/disciplinary.model');
-      
+      const { DisciplinaryAction } = await import(
+        "../disciplinary/disciplinary.model"
+      );
+
       const action = await DisciplinaryAction.findById(actionId);
-      
+
       if (!action) {
-        throw new AppError(httpStatus.NOT_FOUND, "Disciplinary action not found");
+        throw new AppError(
+          httpStatus.NOT_FOUND,
+          "Disciplinary action not found"
+        );
       }
 
       // Check if teacher has permission to resolve this action
       if (action.teacherId.toString() !== teacher._id.toString()) {
-        throw new AppError(httpStatus.FORBIDDEN, "You can only resolve your own disciplinary actions");
+        throw new AppError(
+          httpStatus.FORBIDDEN,
+          "You can only resolve your own disciplinary actions"
+        );
       }
 
       // Update the action directly
-      action.status = 'resolved';
+      action.status = "resolved";
       action.resolvedDate = new Date();
       action.resolvedBy = teacher.userId;
       action.resolutionNotes = resolutionNotes;
@@ -2482,7 +2769,11 @@ class TeacherService {
     }
   }
 
-  async addDisciplinaryActionComment(userId: string, actionId: string, comment: string): Promise<any> {
+  async addDisciplinaryActionComment(
+    userId: string,
+    actionId: string,
+    comment: string
+  ): Promise<any> {
     try {
       const teacher = await Teacher.findOne({ userId });
 
@@ -2490,21 +2781,30 @@ class TeacherService {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
       }
 
-      const { DisciplinaryAction } = await import('../disciplinary/disciplinary.model');
-      
+      const { DisciplinaryAction } = await import(
+        "../disciplinary/disciplinary.model"
+      );
+
       const action = await DisciplinaryAction.findById(actionId);
-      
+
       if (!action) {
-        throw new AppError(httpStatus.NOT_FOUND, "Disciplinary action not found");
+        throw new AppError(
+          httpStatus.NOT_FOUND,
+          "Disciplinary action not found"
+        );
       }
 
       // Check if teacher has permission to comment on this action
       if (action.teacherId.toString() !== teacher._id.toString()) {
-        throw new AppError(httpStatus.FORBIDDEN, "You can only comment on your own disciplinary actions");
+        throw new AppError(
+          httpStatus.FORBIDDEN,
+          "You can only comment on your own disciplinary actions"
+        );
       }
 
       // Add follow-up comment
-      action.resolutionNotes = (action.resolutionNotes || '') + '\n\nFollow-up: ' + comment;
+      action.resolutionNotes =
+        (action.resolutionNotes || "") + "\n\nFollow-up: " + comment;
       action.followUpDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days from now
       const updatedAction = await action.save();
 
@@ -2517,14 +2817,20 @@ class TeacherService {
       if (error instanceof AppError) throw error;
       throw new AppError(
         httpStatus.INTERNAL_SERVER_ERROR,
-        `Failed to add comment to disciplinary action: ${(error as Error).message}`
+        `Failed to add comment to disciplinary action: ${
+          (error as Error).message
+        }`
       );
     }
   }
 
-  async getStudentsByGrade(userId: string, grade: number, section?: string): Promise<any> {
+  async getStudentsByGrade(
+    userId: string,
+    grade: number,
+    section?: string
+  ): Promise<any> {
     try {
-      const teacher = await Teacher.findOne({ userId }).populate('schoolId');
+      const teacher = await Teacher.findOne({ userId }).populate("schoolId");
 
       if (!teacher) {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
@@ -2535,25 +2841,29 @@ class TeacherService {
       // For now, let's allow teachers to access students if they teach in the same school
       const teacherSchedules = await Schedule.find({
         schoolId: teacher.schoolId,
-        'periods.teacherId': teacher._id,
+        "periods.teacherId": teacher._id,
         isActive: true,
       });
 
       // Get all grades this teacher teaches
       const teacherGrades = new Set([
         ...teacher.grades,
-        ...teacherSchedules.map(s => s.grade)
+        ...teacherSchedules.map((s) => s.grade),
       ]);
 
       // If teacher doesn't have direct access to this grade, but has general teaching access in the school,
       // allow access for disciplinary purposes (teachers can report incidents about any student in school)
-      const hasGeneralAccess = teacher.designation === 'head_teacher' || 
-                              teacher.designation === 'assistant_head_teacher' ||
-                              teacher.designation === 'discipline_master' ||
-                              teacherGrades.size > 0; // Has at least some teaching responsibilities
+      const hasGeneralAccess =
+        teacher.designation === "head_teacher" ||
+        teacher.designation === "assistant_head_teacher" ||
+        teacher.designation === "discipline_master" ||
+        teacherGrades.size > 0; // Has at least some teaching responsibilities
 
       if (!teacherGrades.has(grade) && !hasGeneralAccess) {
-        throw new AppError(httpStatus.FORBIDDEN, `You don't have permission to access Grade ${grade}`);
+        throw new AppError(
+          httpStatus.FORBIDDEN,
+          `You don't have permission to access Grade ${grade}`
+        );
       }
 
       const query: any = {
@@ -2565,58 +2875,75 @@ class TeacherService {
       if (section) {
         // Verify teacher has permission for this section
         if (!teacher.sections.includes(section)) {
-          throw new AppError(httpStatus.FORBIDDEN, `You don't have permission to access Section ${section}`);
+          throw new AppError(
+            httpStatus.FORBIDDEN,
+            `You don't have permission to access Section ${section}`
+          );
         }
         query.section = section;
       }
 
       const students = await Student.find(query)
-        .populate('userId', 'firstName lastName email phone')
+        .populate("userId", "firstName lastName email phone")
         .populate({
-          path: 'parentId',
-          select: 'userId',
+          path: "parentId",
+          select: "userId",
           populate: {
-            path: 'userId',
-            select: 'firstName lastName email phone'
-          }
+            path: "userId",
+            select: "firstName lastName email phone",
+          },
         })
         .sort({ rollNumber: 1 });
 
       // Get disciplinary history for each student
-      const { DisciplinaryAction } = await import('../disciplinary/disciplinary.model');
-      
+      const { DisciplinaryAction } = await import(
+        "../disciplinary/disciplinary.model"
+      );
+
       const studentsWithStats = await Promise.all(
         students.map(async (student) => {
-          const disciplinaryHistory = await DisciplinaryAction.getStudentDisciplinaryHistory(student._id.toString());
-          
+          const disciplinaryHistory =
+            await DisciplinaryAction.getStudentDisciplinaryHistory(
+              student._id.toString()
+            );
+
           const user = student.userId as any;
           const parent = student.parentId as any;
           const parentUser = parent?.userId as any;
-          
+
           return {
             id: student._id,
             studentId: student.studentId,
-            name: user ? `${user.firstName} ${user.lastName}` : 'N/A',
-            email: user?.email || 'N/A',
-            phone: user?.phone || 'N/A',
+            name: user ? `${user.firstName} ${user.lastName}` : "N/A",
+            email: user?.email || "N/A",
+            phone: user?.phone || "N/A",
             rollNumber: student.rollNumber,
             grade: student.grade,
             section: student.section,
             admissionDate: student.admissionDate,
             bloodGroup: student.bloodGroup,
-            parentInfo: parent ? {
-              name: parentUser ? `${parentUser.firstName} ${parentUser.lastName}` : 'N/A',
-              email: parentUser?.email || 'N/A',
-              phone: parentUser?.phone || 'N/A',
-            } : null,
+            parentInfo: parent
+              ? {
+                  name: parentUser
+                    ? `${parentUser.firstName} ${parentUser.lastName}`
+                    : "N/A",
+                  email: parentUser?.email || "N/A",
+                  phone: parentUser?.phone || "N/A",
+                }
+              : null,
             disciplinaryHistory: {
               totalActions: disciplinaryHistory.totalActions,
               activeWarnings: disciplinaryHistory.activeActions,
               totalPoints: disciplinaryHistory.totalPoints,
               redWarrants: disciplinaryHistory.redWarrants,
-              lastActionDate: disciplinaryHistory.recentActions[0]?.issuedDate || null,
-              riskLevel: disciplinaryHistory.totalPoints > 40 ? 'high' : 
-                        disciplinaryHistory.totalPoints > 20 ? 'medium' : 'low'
+              lastActionDate:
+                disciplinaryHistory.recentActions[0]?.issuedDate || null,
+              riskLevel:
+                disciplinaryHistory.totalPoints > 40
+                  ? "high"
+                  : disciplinaryHistory.totalPoints > 20
+                  ? "medium"
+                  : "low",
             },
             hasPhotos: false, // TODO: Check if student has photos
           };
@@ -2626,26 +2953,44 @@ class TeacherService {
       // Calculate class statistics
       const classStats = {
         totalStudents: students.length,
-        studentsWithDisciplinaryActions: studentsWithStats.filter(s => s.disciplinaryHistory.totalActions > 0).length,
-        studentsWithActiveWarnings: studentsWithStats.filter(s => s.disciplinaryHistory.activeWarnings > 0).length,
-        studentsWithRedWarrants: studentsWithStats.filter(s => s.disciplinaryHistory.redWarrants > 0).length,
-        highRiskStudents: studentsWithStats.filter(s => s.disciplinaryHistory.riskLevel === 'high').length,
-        averageDisciplinaryPoints: studentsWithStats.reduce((sum, s) => sum + s.disciplinaryHistory.totalPoints, 0) / students.length,
+        studentsWithDisciplinaryActions: studentsWithStats.filter(
+          (s) => s.disciplinaryHistory.totalActions > 0
+        ).length,
+        studentsWithActiveWarnings: studentsWithStats.filter(
+          (s) => s.disciplinaryHistory.activeWarnings > 0
+        ).length,
+        studentsWithRedWarrants: studentsWithStats.filter(
+          (s) => s.disciplinaryHistory.redWarrants > 0
+        ).length,
+        highRiskStudents: studentsWithStats.filter(
+          (s) => s.disciplinaryHistory.riskLevel === "high"
+        ).length,
+        averageDisciplinaryPoints:
+          studentsWithStats.reduce(
+            (sum, s) => sum + s.disciplinaryHistory.totalPoints,
+            0
+          ) / students.length,
       };
 
       return {
         teacherInfo: {
           id: teacher._id,
           teacherId: teacher.teacherId,
-          name: teacher.userId ? `${(teacher.userId as any).firstName} ${(teacher.userId as any).lastName}` : 'N/A',
+          name: teacher.userId
+            ? `${(teacher.userId as any).firstName} ${
+                (teacher.userId as any).lastName
+              }`
+            : "N/A",
           subjects: teacher.subjects,
           grades: teacher.grades,
           sections: teacher.sections,
         },
         classInfo: {
           grade,
-          section: section || 'All Sections',
-          className: section ? `Grade ${grade} - Section ${section}` : `Grade ${grade} - All Sections`,
+          section: section || "All Sections",
+          className: section
+            ? `Grade ${grade} - Section ${section}`
+            : `Grade ${grade} - All Sections`,
         },
         students: studentsWithStats,
         stats: classStats,
@@ -2663,21 +3008,25 @@ class TeacherService {
 
   async getMyGradingTasks(userId: string): Promise<any> {
     try {
-      const teacher = await Teacher.findOne({ userId }).populate('schoolId');
+      const teacher = await Teacher.findOne({ userId }).populate("schoolId");
 
       if (!teacher) {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
       }
 
       const now = new Date();
-      const currentAcademicYear = `${now.getFullYear()}-${now.getFullYear() + 1}`;
+      const currentAcademicYear = `${now.getFullYear()}-${
+        now.getFullYear() + 1
+      }`;
 
       // Import required models
-      const { Exam } = await import('../exam/exam.model');
-      const { AcademicCalendar } = await import('../academic-calendar/academic-calendar.model');
-      const { Grade } = await import('../grade/grade.model');
+      const { Exam } = await import("../exam/exam.model");
+      const { AcademicCalendar } = await import(
+        "../academic-calendar/academic-calendar.model"
+      );
+      const { Grade } = await import("../grade/grade.model");
 
-      // TEMPORARILY SIMPLIFIED - Academic calendar integration needs proper schema  
+      // TEMPORARILY SIMPLIFIED - Academic calendar integration needs proper schema
       // Get exams assigned to this teacher from academic calendar
       const academicExams: any[] = []; // TODO: Fix academic calendar integration
       /*
@@ -2700,8 +3049,8 @@ class TeacherService {
         teacherId: teacher._id,
         academicYear: currentAcademicYear,
         examDate: { $lte: now }, // Exam date has passed
-        status: { $in: ['completed', 'grading'] }
-      }).populate('subjectId', 'name code');
+        status: { $in: ["completed", "grading"] },
+      }).populate("subjectId", "name code");
 
       const gradingTasks: any[] = [];
 
@@ -2770,17 +3119,17 @@ class TeacherService {
         const existingGrades = await Grade.countDocuments({
           teacherId: teacher._id,
           subjectId: exam.subjectId,
-          gradeType: 'exam',
+          gradeType: "exam",
           title: exam.examName,
-          academicYear: currentAcademicYear
+          academicYear: currentAcademicYear,
         });
 
         const studentsQuery: any = {
           schoolId: teacher.schoolId._id,
           grade: exam.grade,
-          isActive: true
+          isActive: true,
         };
-        
+
         if (exam.section) {
           studentsQuery.section = exam.section;
         }
@@ -2804,12 +3153,22 @@ class TeacherService {
             totalStudents: students,
             gradedStudents: existingGrades,
             pendingGrades,
-            gradingStatus: existingGrades === 0 ? 'not_started' : 
-                          pendingGrades === 0 ? 'completed' : 'in_progress',
-            deadline: new Date(exam.examDate.getTime() + 7 * 24 * 60 * 60 * 1000), // 7 days after exam
-            isOverdue: now > new Date(exam.examDate.getTime() + 7 * 24 * 60 * 60 * 1000),
-            priority: now > new Date(exam.examDate.getTime() + 5 * 24 * 60 * 60 * 1000) ? 'high' : 'medium',
-            source: 'exam',
+            gradingStatus:
+              existingGrades === 0
+                ? "not_started"
+                : pendingGrades === 0
+                ? "completed"
+                : "in_progress",
+            deadline: new Date(
+              exam.examDate.getTime() + 7 * 24 * 60 * 60 * 1000
+            ), // 7 days after exam
+            isOverdue:
+              now > new Date(exam.examDate.getTime() + 7 * 24 * 60 * 60 * 1000),
+            priority:
+              now > new Date(exam.examDate.getTime() + 5 * 24 * 60 * 60 * 1000)
+                ? "high"
+                : "medium",
+            source: "exam",
             canGrade: true,
           });
         }
@@ -2817,19 +3176,27 @@ class TeacherService {
 
       // Sort by priority and deadline
       gradingTasks.sort((a, b) => {
-        if (a.priority === 'high' && b.priority !== 'high') return -1;
-        if (b.priority === 'high' && a.priority !== 'high') return 1;
+        if (a.priority === "high" && b.priority !== "high") return -1;
+        if (b.priority === "high" && a.priority !== "high") return 1;
         return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
       });
 
       const stats = {
         totalTasks: gradingTasks.length,
-        notStarted: gradingTasks.filter(t => t.gradingStatus === 'not_started').length,
-        inProgress: gradingTasks.filter(t => t.gradingStatus === 'in_progress').length,
-        completed: gradingTasks.filter(t => t.gradingStatus === 'completed').length,
-        overdue: gradingTasks.filter(t => t.isOverdue).length,
-        highPriority: gradingTasks.filter(t => t.priority === 'high').length,
-        totalPendingGrades: gradingTasks.reduce((sum, t) => sum + t.pendingGrades, 0),
+        notStarted: gradingTasks.filter(
+          (t) => t.gradingStatus === "not_started"
+        ).length,
+        inProgress: gradingTasks.filter(
+          (t) => t.gradingStatus === "in_progress"
+        ).length,
+        completed: gradingTasks.filter((t) => t.gradingStatus === "completed")
+          .length,
+        overdue: gradingTasks.filter((t) => t.isOverdue).length,
+        highPriority: gradingTasks.filter((t) => t.priority === "high").length,
+        totalPendingGrades: gradingTasks.reduce(
+          (sum, t) => sum + t.pendingGrades,
+          0
+        ),
       };
 
       return {
@@ -2848,9 +3215,13 @@ class TeacherService {
     }
   }
 
-  async getExamGradingDetails(userId: string, examId: string, examItemId?: string): Promise<any> {
+  async getExamGradingDetails(
+    userId: string,
+    examId: string,
+    examItemId?: string
+  ): Promise<any> {
     try {
-      const teacher = await Teacher.findOne({ userId }).populate('schoolId');
+      const teacher = await Teacher.findOne({ userId }).populate("schoolId");
 
       if (!teacher) {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
@@ -2902,14 +3273,20 @@ class TeacherService {
 
         subjectInfo = examItem.subjectId;
         */
-        throw new AppError(httpStatus.NOT_IMPLEMENTED, "Academic calendar exam grading temporarily disabled");
+        throw new AppError(
+          httpStatus.NOT_IMPLEMENTED,
+          "Academic calendar exam grading temporarily disabled"
+        );
       } else {
         // This is from regular exam
-        const { Exam } = await import('../exam/exam.model');
-        const exam = await Exam.findById(examId).populate('subjectId');
-        
+        const { Exam } = await import("../exam/exam.model");
+        const exam = await Exam.findById(examId).populate("subjectId");
+
         if (!exam || exam.teacherId?.toString() !== teacher._id.toString()) {
-          throw new AppError(httpStatus.FORBIDDEN, "You are not assigned to grade this exam");
+          throw new AppError(
+            httpStatus.FORBIDDEN,
+            "You are not assigned to grade this exam"
+          );
         }
 
         examDetails = {
@@ -2928,7 +3305,7 @@ class TeacherService {
         studentsQuery = {
           schoolId: teacher.schoolId._id,
           grade: exam.grade,
-          isActive: true
+          isActive: true,
         };
 
         if (exam.section) {
@@ -2940,37 +3317,38 @@ class TeacherService {
 
       // Get students for grading
       const students = await Student.find(studentsQuery)
-        .populate('userId', 'firstName lastName')
+        .populate("userId", "firstName lastName")
         .sort({ rollNumber: 1 });
 
       // Get existing grades
-      const { Grade } = await import('../grade/grade.model');
+      const { Grade } = await import("../grade/grade.model");
       const existingGrades = await Grade.find({
         teacherId: teacher._id,
         subjectId: subjectInfo._id || subjectInfo,
-        gradeType: 'exam',
+        gradeType: "exam",
         title: examDetails.examName,
-        academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)
+        academicYear:
+          new Date().getFullYear() + "-" + (new Date().getFullYear() + 1),
       });
 
       const gradeMap = new Map();
-      existingGrades.forEach(grade => {
+      existingGrades.forEach((grade) => {
         gradeMap.set(grade.studentId.toString(), {
           marksObtained: grade.marksObtained,
           percentage: grade.percentage,
           grade: grade.grade,
           remarks: grade.description,
-          gradedDate: grade.gradedDate
+          gradedDate: grade.gradedDate,
         });
       });
 
-      const studentsForGrading = students.map(student => {
+      const studentsForGrading = students.map((student) => {
         const existingGrade = gradeMap.get(student._id.toString());
         const user = student.userId as any;
         return {
           id: student._id,
           studentId: student.studentId,
-          name: user ? `${user.firstName} ${user.lastName}` : 'N/A',
+          name: user ? `${user.firstName} ${user.lastName}` : "N/A",
           rollNumber: student.rollNumber,
           grade: examDetails.grade,
           section: student.section,
@@ -2983,10 +3361,21 @@ class TeacherService {
         totalStudents: students.length,
         gradedStudents: existingGrades.length,
         pendingGrades: students.length - existingGrades.length,
-        averageMarks: existingGrades.length > 0 ? 
-          existingGrades.reduce((sum, g) => sum + g.marksObtained, 0) / existingGrades.length : 0,
-        passedStudents: existingGrades.filter(g => g.percentage >= ((examDetails.passingMarks / examDetails.totalMarks) * 100)).length,
-        failedStudents: existingGrades.filter(g => g.percentage < ((examDetails.passingMarks / examDetails.totalMarks) * 100)).length,
+        averageMarks:
+          existingGrades.length > 0
+            ? existingGrades.reduce((sum, g) => sum + g.marksObtained, 0) /
+              existingGrades.length
+            : 0,
+        passedStudents: existingGrades.filter(
+          (g) =>
+            g.percentage >=
+            (examDetails.passingMarks / examDetails.totalMarks) * 100
+        ).length,
+        failedStudents: existingGrades.filter(
+          (g) =>
+            g.percentage <
+            (examDetails.passingMarks / examDetails.totalMarks) * 100
+        ).length,
       };
 
       return {
@@ -2994,18 +3383,48 @@ class TeacherService {
           ...examDetails,
           subject: {
             id: subjectInfo._id || subjectInfo,
-            name: subjectInfo.name || 'Unknown Subject',
-            code: subjectInfo.code || 'N/A'
-          }
+            name: subjectInfo.name || "Unknown Subject",
+            code: subjectInfo.code || "N/A",
+          },
         },
         students: studentsForGrading,
         gradingStats,
         gradingScale: {
-          A: `${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100) + 20}-100`,
-          B: `${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100) + 10}-${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100) + 19}`,
-          C: `${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100)}-${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100) + 9}`,
-          D: `${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100) - 10}-${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100) - 1}`,
-          F: `0-${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100) - 11}`
+          A: `${
+            Math.ceil(
+              (examDetails.passingMarks / examDetails.totalMarks) * 100
+            ) + 20
+          }-100`,
+          B: `${
+            Math.ceil(
+              (examDetails.passingMarks / examDetails.totalMarks) * 100
+            ) + 10
+          }-${
+            Math.ceil(
+              (examDetails.passingMarks / examDetails.totalMarks) * 100
+            ) + 19
+          }`,
+          C: `${Math.ceil(
+            (examDetails.passingMarks / examDetails.totalMarks) * 100
+          )}-${
+            Math.ceil(
+              (examDetails.passingMarks / examDetails.totalMarks) * 100
+            ) + 9
+          }`,
+          D: `${
+            Math.ceil(
+              (examDetails.passingMarks / examDetails.totalMarks) * 100
+            ) - 10
+          }-${
+            Math.ceil(
+              (examDetails.passingMarks / examDetails.totalMarks) * 100
+            ) - 1
+          }`,
+          F: `0-${
+            Math.ceil(
+              (examDetails.passingMarks / examDetails.totalMarks) * 100
+            ) - 11
+          }`,
         },
         canSubmitGrades: true,
       };
@@ -3026,9 +3445,10 @@ class TeacherService {
         throw new AppError(httpStatus.NOT_FOUND, "Teacher not found");
       }
 
-      const { Grade } = await import('../grade/grade.model');
-      const currentAcademicYear = new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
-      
+      const { Grade } = await import("../grade/grade.model");
+      const currentAcademicYear =
+        new Date().getFullYear() + "-" + (new Date().getFullYear() + 1);
+
       // Verify teacher is assigned to the exam/subject
       const { examId, examItemId, examName, subjectId, grades } = gradesData;
 
@@ -3050,11 +3470,14 @@ class TeacherService {
         */
       } else {
         // This is from regular exam - verify assignment
-        const { Exam } = await import('../exam/exam.model');
+        const { Exam } = await import("../exam/exam.model");
         const exam = await Exam.findById(examId);
-        
+
         if (!exam || exam.teacherId?.toString() !== teacher._id.toString()) {
-          throw new AppError(httpStatus.FORBIDDEN, "You are not assigned to grade this exam");
+          throw new AppError(
+            httpStatus.FORBIDDEN,
+            "You are not assigned to grade this exam"
+          );
         }
       }
 
@@ -3069,9 +3492,9 @@ class TeacherService {
             studentId: gradeData.studentId,
             teacherId: teacher._id,
             subjectId,
-            gradeType: 'exam',
+            gradeType: "exam",
             title: examName,
-            academicYear: currentAcademicYear
+            academicYear: currentAcademicYear,
           });
 
           const gradeInfo = {
@@ -3080,13 +3503,15 @@ class TeacherService {
             teacherId: teacher._id,
             subjectId,
             academicYear: currentAcademicYear,
-            semester: gradeData.semester || 'first',
-            gradeType: 'exam',
+            semester: gradeData.semester || "first",
+            gradeType: "exam",
             title: examName,
-            description: gradeData.remarks || '',
+            description: gradeData.remarks || "",
             marksObtained: gradeData.obtainedMarks,
             totalMarks: gradeData.totalMarks || 100,
-            percentage: gradeData.percentage || ((gradeData.obtainedMarks / (gradeData.totalMarks || 100)) * 100),
+            percentage:
+              gradeData.percentage ||
+              (gradeData.obtainedMarks / (gradeData.totalMarks || 100)) * 100,
             grade: gradeData.grade,
             weightage: gradeData.weightage || 100, // Full weightage for exams
             gradedDate: new Date(),
@@ -3098,25 +3523,33 @@ class TeacherService {
             await existingGrade.save();
             submittedGrades.push({
               studentId: gradeData.studentId,
-              action: 'updated',
-              gradeId: existingGrade._id
+              action: "updated",
+              gradeId: existingGrade._id,
             });
           } else {
             // Create new grade
             const newGrade = await Grade.create(gradeInfo);
             submittedGrades.push({
               studentId: gradeData.studentId,
-              action: 'created',
-              gradeId: newGrade._id
+              action: "created",
+              gradeId: newGrade._id,
             });
           }
 
           // Send notification to student and parent about grade publication
           try {
-            const { Notification } = await import('../notification/notification.model');
-            const student = await Student.findById(gradeData.studentId).populate([
-              { path: 'userId', select: 'firstName lastName' },
-              { path: 'parentId', select: 'userId', populate: { path: 'userId', select: '_id' } }
+            const { Notification } = await import(
+              "../notification/notification.model"
+            );
+            const student = await Student.findById(
+              gradeData.studentId
+            ).populate([
+              { path: "userId", select: "firstName lastName" },
+              {
+                path: "parentId",
+                select: "userId",
+                populate: { path: "userId", select: "_id" },
+              },
             ]);
 
             if (student) {
@@ -3128,23 +3561,25 @@ class TeacherService {
               await Notification.create({
                 schoolId: teacher.schoolId,
                 recipientId: studentUser._id,
-                recipientType: 'student',
+                recipientType: "student",
                 senderId: teacher.userId,
-                senderType: 'teacher',
-                type: 'grade_published',
+                senderType: "teacher",
+                type: "grade_published",
                 title: `Grade Published: ${examName}`,
-                message: `Your exam grade has been published for ${examName}. Marks: ${gradeData.obtainedMarks}/${gradeData.totalMarks || 100} (${gradeData.grade})`,
-                priority: 'medium',
+                message: `Your exam grade has been published for ${examName}. Marks: ${
+                  gradeData.obtainedMarks
+                }/${gradeData.totalMarks || 100} (${gradeData.grade})`,
+                priority: "medium",
                 relatedEntityId: examId,
-                relatedEntityType: 'exam',
+                relatedEntityType: "exam",
                 metadata: {
-                  subjectName: gradeData.subjectName || 'Unknown Subject',
+                  subjectName: gradeData.subjectName || "Unknown Subject",
                   examName,
                   marks: gradeData.obtainedMarks,
                   totalMarks: gradeData.totalMarks || 100,
                   grade: gradeData.grade,
-                  percentage: gradeData.percentage
-                }
+                  percentage: gradeData.percentage,
+                },
               });
 
               // Notify parent if exists
@@ -3152,36 +3587,42 @@ class TeacherService {
                 await Notification.create({
                   schoolId: teacher.schoolId,
                   recipientId: parentUser._id,
-                  recipientType: 'parent',
+                  recipientType: "parent",
                   senderId: teacher.userId,
-                  senderType: 'teacher',
-                  type: 'grade_published',
+                  senderType: "teacher",
+                  type: "grade_published",
                   title: `Grade Published: ${studentUser.firstName}'s ${examName}`,
-                  message: `${studentUser.firstName}'s exam grade has been published for ${examName}. Marks: ${gradeData.obtainedMarks}/${gradeData.totalMarks || 100} (${gradeData.grade})`,
-                  priority: 'medium',
+                  message: `${
+                    studentUser.firstName
+                  }'s exam grade has been published for ${examName}. Marks: ${
+                    gradeData.obtainedMarks
+                  }/${gradeData.totalMarks || 100} (${gradeData.grade})`,
+                  priority: "medium",
                   relatedEntityId: examId,
-                  relatedEntityType: 'exam',
+                  relatedEntityType: "exam",
                   metadata: {
                     studentName: `${studentUser.firstName} ${studentUser.lastName}`,
-                    subjectName: gradeData.subjectName || 'Unknown Subject',
+                    subjectName: gradeData.subjectName || "Unknown Subject",
                     examName,
                     marks: gradeData.obtainedMarks,
                     totalMarks: gradeData.totalMarks || 100,
                     grade: gradeData.grade,
-                    percentage: gradeData.percentage
-                  }
+                    percentage: gradeData.percentage,
+                  },
                 });
               }
             }
           } catch (notificationError) {
-            console.error('Failed to send grade notification:', notificationError);
+            console.error(
+              "Failed to send grade notification:",
+              notificationError
+            );
             // Don't fail grade submission if notification fails
           }
-
         } catch (error) {
           errors.push({
             studentId: gradeData.studentId,
-            error: (error as Error).message
+            error: (error as Error).message,
           });
         }
       }
@@ -3190,8 +3631,8 @@ class TeacherService {
         totalSubmissions: grades.length,
         successful: submittedGrades.length,
         failed: errors.length,
-        updated: submittedGrades.filter(g => g.action === 'updated').length,
-        created: submittedGrades.filter(g => g.action === 'created').length,
+        updated: submittedGrades.filter((g) => g.action === "updated").length,
+        created: submittedGrades.filter((g) => g.action === "created").length,
       };
 
       return {
@@ -3205,9 +3646,10 @@ class TeacherService {
         stats,
         submittedGrades,
         errors,
-        message: errors.length === 0 ? 
-          `Successfully submitted grades for ${stats.successful} students` :
-          `Submitted ${stats.successful} grades with ${stats.failed} errors`,
+        message:
+          errors.length === 0
+            ? `Successfully submitted grades for ${stats.successful} students`
+            : `Submitted ${stats.successful} grades with ${stats.failed} errors`,
       };
     } catch (error) {
       if (error instanceof AppError) throw error;

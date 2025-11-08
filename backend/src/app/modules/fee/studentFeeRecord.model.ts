@@ -1,5 +1,10 @@
 import { Schema, model } from "mongoose";
-import { IStudentFeeRecord, PaymentStatus, Month, FeeType } from "./fee.interface";
+import {
+  IStudentFeeRecord,
+  PaymentStatus,
+  Month,
+  FeeType,
+} from "./fee.interface";
 
 const monthlyPaymentSchema = new Schema(
   {
@@ -177,10 +182,7 @@ const studentFeeRecordSchema = new Schema<IStudentFeeRecord>(
 );
 
 // Compound index for uniqueness (one record per student per year)
-studentFeeRecordSchema.index(
-  { student: 1, academicYear: 1 },
-  { unique: true }
-);
+studentFeeRecordSchema.index({ student: 1, academicYear: 1 }, { unique: true });
 
 // Index for querying overdue payments
 studentFeeRecordSchema.index({ status: 1, "monthlyPayments.status": 1 });
@@ -192,13 +194,14 @@ studentFeeRecordSchema.pre("save", function (next) {
     (sum, payment) => sum + payment.paidAmount,
     0
   );
-  
+
   // Calculate total paid amount from one-time fees
-  const oneTimePaid = this.oneTimeFees?.reduce(
-    (sum: number, fee: any) => sum + (fee.paidAmount || 0),
-    0
-  ) || 0;
-  
+  const oneTimePaid =
+    this.oneTimeFees?.reduce(
+      (sum: number, fee: any) => sum + (fee.paidAmount || 0),
+      0
+    ) || 0;
+
   // Total paid = monthly + one-time
   this.totalPaidAmount = monthlyPaid + oneTimePaid;
 
@@ -238,14 +241,15 @@ studentFeeRecordSchema.statics.createForStudent = async function (
 ) {
   const monthlyAmount = Math.round(totalFeeAmount / 12);
   const monthlyPayments: any[] = [];
-  
+
   // Ensure dueDate is valid (1-31), default to 10 if invalid
-  const validDueDate = (dueDate && dueDate >= 1 && dueDate <= 31) ? dueDate : 10;
+  const validDueDate = dueDate && dueDate >= 1 && dueDate <= 31 ? dueDate : 10;
 
   for (let i = 0; i < 12; i++) {
     const month = ((startMonth + i - 1) % 12) + 1;
-    const year = parseInt(academicYear.split("-")[0]) + (month < startMonth ? 1 : 0);
-    
+    const year =
+      parseInt(academicYear.split("-")[0]) + (month < startMonth ? 1 : 0);
+
     monthlyPayments.push({
       month,
       dueAmount: monthlyAmount,
@@ -276,8 +280,10 @@ studentFeeRecordSchema.methods.recordPayment = async function (
   month: Month,
   amount: number
 ) {
-  const monthlyPayment = this.monthlyPayments.find((p: any) => p.month === month);
-  
+  const monthlyPayment = this.monthlyPayments.find(
+    (p: any) => p.month === month
+  );
+
   if (!monthlyPayment) {
     throw new Error(`No payment record found for month ${month}`);
   }
@@ -291,7 +297,10 @@ studentFeeRecordSchema.methods.recordPayment = async function (
   monthlyPayment.paidDate = new Date();
 
   // Update status
-  if (monthlyPayment.paidAmount >= monthlyPayment.dueAmount + monthlyPayment.lateFee) {
+  if (
+    monthlyPayment.paidAmount >=
+    monthlyPayment.dueAmount + monthlyPayment.lateFee
+  ) {
     monthlyPayment.status = PaymentStatus.PAID;
   } else {
     monthlyPayment.status = PaymentStatus.PARTIAL;
@@ -305,8 +314,10 @@ studentFeeRecordSchema.methods.applyLateFee = async function (
   month: Month,
   lateFeePercentage: number
 ) {
-  const monthlyPayment = this.monthlyPayments.find((p: any) => p.month === month);
-  
+  const monthlyPayment = this.monthlyPayments.find(
+    (p: any) => p.month === month
+  );
+
   if (!monthlyPayment) {
     throw new Error(`No payment record found for month ${month}`);
   }
@@ -332,8 +343,10 @@ studentFeeRecordSchema.methods.waiveFee = async function (
   reason: string,
   waivedBy: string
 ) {
-  const monthlyPayment = this.monthlyPayments.find((p: any) => p.month === month);
-  
+  const monthlyPayment = this.monthlyPayments.find(
+    (p: any) => p.month === month
+  );
+
   if (!monthlyPayment) {
     throw new Error(`No payment record found for month ${month}`);
   }
@@ -372,8 +385,8 @@ studentFeeRecordSchema.statics.findDefaulters = async function (
     school: schoolId,
     status: { $in: [PaymentStatus.OVERDUE, PaymentStatus.PARTIAL] },
     "monthlyPayments.dueDate": { $lt: cutoffDate },
-    "monthlyPayments.status": { 
-      $in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL] 
+    "monthlyPayments.status": {
+      $in: [PaymentStatus.PENDING, PaymentStatus.PARTIAL],
     },
   }).populate("student");
 };

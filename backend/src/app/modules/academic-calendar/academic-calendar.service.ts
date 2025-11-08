@@ -72,33 +72,50 @@ class AcademicCalendarService {
         endTime: eventData.endTime,
         venue: eventData.location,
         targetAudience: eventData.targetAudience.allSchool ? "all" : "specific",
-        specificAudience: !eventData.targetAudience.allSchool ? {
-          grades: eventData.targetAudience.grades?.map(g => parseInt(g)) || [],
-          sections: eventData.targetAudience.classes || [],
-          teacherIds: eventData.targetAudience.teachers?.map(t => new Types.ObjectId(t)) || [],
-          studentIds: eventData.targetAudience.students?.map(s => new Types.ObjectId(s)) || [],
-        } : undefined,
+        specificAudience: !eventData.targetAudience.allSchool
+          ? {
+              grades:
+                eventData.targetAudience.grades?.map((g) => parseInt(g)) || [],
+              sections: eventData.targetAudience.classes || [],
+              teacherIds:
+                eventData.targetAudience.teachers?.map(
+                  (t) => new Types.ObjectId(t)
+                ) || [],
+              studentIds:
+                eventData.targetAudience.students?.map(
+                  (s) => new Types.ObjectId(s)
+                ) || [],
+            }
+          : undefined,
         priority: eventData.priority,
         isRecurring: eventData.isRecurring,
-        recurrencePattern: eventData.isRecurring ? {
-          frequency: eventData.recurrence?.frequency || "weekly",
-          interval: eventData.recurrence?.interval || 1,
-          daysOfWeek: (eventData.recurrence?.frequency || "weekly") === "weekly" 
-            ? [new Date(eventData.startDate).getDay()] // Default to the start date's day of week
-            : undefined,
-          dayOfMonth: (eventData.recurrence?.frequency || "weekly") === "monthly" 
-            ? new Date(eventData.startDate).getDate() 
-            : undefined,
-          endDate: eventData.recurrence?.endDate ? new Date(eventData.recurrence.endDate) : undefined,
-          occurrences: eventData.recurrence?.occurrences || 5, // Default to 5 occurrences if no end date
-        } : undefined,
+        recurrencePattern: eventData.isRecurring
+          ? {
+              frequency: eventData.recurrence?.frequency || "weekly",
+              interval: eventData.recurrence?.interval || 1,
+              daysOfWeek:
+                (eventData.recurrence?.frequency || "weekly") === "weekly"
+                  ? [new Date(eventData.startDate).getDay()] // Default to the start date's day of week
+                  : undefined,
+              dayOfMonth:
+                (eventData.recurrence?.frequency || "weekly") === "monthly"
+                  ? new Date(eventData.startDate).getDate()
+                  : undefined,
+              endDate: eventData.recurrence?.endDate
+                ? new Date(eventData.recurrence.endDate)
+                : undefined,
+              occurrences: eventData.recurrence?.occurrences || 5, // Default to 5 occurrences if no end date
+            }
+          : undefined,
         color: this.getDefaultColor(eventData.eventType),
         createdBy: eventData.organizerId,
         isActive: eventData.status === "published",
       };
 
       // Create calendar event
-      const newEvent = await AcademicCalendar.create([mappedEventData], { session });
+      const newEvent = await AcademicCalendar.create([mappedEventData], {
+        session,
+      });
 
       await session.commitTransaction();
 

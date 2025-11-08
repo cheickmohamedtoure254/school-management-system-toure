@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { Exam, ExamResult } from './exam.model';
+import { Types } from "mongoose";
+import { Exam, ExamResult } from "./exam.model";
 import {
   ICreateExamRequest,
   IUpdateExamRequest,
@@ -10,26 +10,29 @@ import {
   IExamFilters,
   IExamDocument,
   IExamResultDocument,
-} from './exam.interface';
-import { AppError } from '../../errors/AppError';
-import { Student } from '../student/student.model';
-import { Teacher } from '../teacher/teacher.model';
-import { Subject } from '../subject/subject.model';
-import { School } from '../school/school.model';
+} from "./exam.interface";
+import { AppError } from "../../errors/AppError";
+import { Student } from "../student/student.model";
+import { Teacher } from "../teacher/teacher.model";
+import { Subject } from "../subject/subject.model";
+import { School } from "../school/school.model";
 
 class ExamService {
   // Create exam
-  async createExam(data: ICreateExamRequest, userId: string): Promise<IExamResponse> {
+  async createExam(
+    data: ICreateExamRequest,
+    userId: string
+  ): Promise<IExamResponse> {
     // Verify teacher has permission to create exam for this school
-    const teacher = await Teacher.findById(data.teacherId).populate('schoolId');
+    const teacher = await Teacher.findById(data.teacherId).populate("schoolId");
     if (!teacher) {
-      throw new AppError(404, 'Teacher not found');
+      throw new AppError(404, "Teacher not found");
     }
 
     // Verify subject exists
     const subject = await Subject.findById(data.subjectId);
     if (!subject) {
-      throw new AppError(404, 'Subject not found');
+      throw new AppError(404, "Subject not found");
     }
 
     // Check for conflicting exams (same grade, section, subject, date, overlapping time)
@@ -40,16 +43,34 @@ class ExamService {
       section: data.section,
       subjectId: data.subjectId,
       examDate: {
-        $gte: new Date(examDate.getFullYear(), examDate.getMonth(), examDate.getDate()),
-        $lt: new Date(examDate.getFullYear(), examDate.getMonth(), examDate.getDate() + 1),
+        $gte: new Date(
+          examDate.getFullYear(),
+          examDate.getMonth(),
+          examDate.getDate()
+        ),
+        $lt: new Date(
+          examDate.getFullYear(),
+          examDate.getMonth(),
+          examDate.getDate() + 1
+        ),
       },
       isActive: true,
     });
 
     // Check for time conflicts
     for (const existingExam of conflictingExams) {
-      if (this.hasTimeConflict(data.startTime, data.endTime, existingExam.startTime, existingExam.endTime)) {
-        throw new AppError(400, `Time conflict with existing exam: ${existingExam.examName}`);
+      if (
+        this.hasTimeConflict(
+          data.startTime,
+          data.endTime,
+          existingExam.startTime,
+          existingExam.endTime
+        )
+      ) {
+        throw new AppError(
+          400,
+          `Time conflict with existing exam: ${existingExam.examName}`
+        );
       }
     }
 
@@ -71,38 +92,47 @@ class ExamService {
   }
 
   // Get exam by ID
-  async getExamById(id: string, userId: string, userRole: string): Promise<IExamResponse> {
+  async getExamById(
+    id: string,
+    userId: string,
+    userRole: string
+  ): Promise<IExamResponse> {
     const exam = await Exam.findById(id)
-      .populate('teacherId', 'userId teacherId')
-      .populate('subjectId', 'name code')
-      .populate('schoolId', 'name')
-      .populate('createdBy', 'firstName lastName');
+      .populate("teacherId", "userId teacherId")
+      .populate("subjectId", "name code")
+      .populate("schoolId", "name")
+      .populate("createdBy", "firstName lastName");
 
     if (!exam) {
-      throw new AppError(404, 'Exam not found');
+      throw new AppError(404, "Exam not found");
     }
 
     // Check permissions based on role
-    if (userRole === 'teacher') {
+    if (userRole === "teacher") {
       const teacher = await Teacher.findOne({ userId });
       if (!teacher || exam.teacherId.toString() !== teacher._id.toString()) {
-        throw new AppError(403, 'Not authorized to view this exam');
+        throw new AppError(403, "Not authorized to view this exam");
       }
-    } else if (userRole === 'student') {
+    } else if (userRole === "student") {
       const student = await Student.findOne({ userId });
-      if (!student || exam.schoolId.toString() !== student.schoolId.toString() ||
-          exam.grade !== student.grade || 
-          (exam.section && exam.section !== student.section)) {
-        throw new AppError(403, 'Not authorized to view this exam');
+      if (
+        !student ||
+        exam.schoolId.toString() !== student.schoolId.toString() ||
+        exam.grade !== student.grade ||
+        (exam.section && exam.section !== student.section)
+      ) {
+        throw new AppError(403, "Not authorized to view this exam");
       }
     }
 
     const formattedExam = this.formatExamResponse(exam);
 
     // Add student and submission counts for authorized users
-    if (['teacher', 'admin', 'superadmin'].includes(userRole)) {
+    if (["teacher", "admin", "superadmin"].includes(userRole)) {
       const eligibleStudents = await exam.getEligibleStudents();
-      const submissionCount = await ExamResult.countDocuments({ examId: exam._id });
+      const submissionCount = await ExamResult.countDocuments({
+        examId: exam._id,
+      });
       formattedExam.studentCount = eligibleStudents.length;
       formattedExam.submissionCount = submissionCount;
     }
@@ -111,25 +141,40 @@ class ExamService {
   }
 
   // Update exam
-  async updateExam(id: string, data: IUpdateExamRequest, userId: string): Promise<IExamResponse> {
+  async updateExam(
+    id: string,
+    data: IUpdateExamRequest,
+    userId: string
+  ): Promise<IExamResponse> {
     const exam = await Exam.findById(id);
     if (!exam) {
-      throw new AppError(404, 'Exam not found');
+      throw new AppError(404, "Exam not found");
     }
 
     // Verify teacher owns this exam or is admin
     const teacher = await Teacher.findOne({ userId });
     if (!teacher || exam.teacherId.toString() !== teacher._id.toString()) {
-      throw new AppError(403, 'Not authorized to update this exam');
+      throw new AppError(403, "Not authorized to update this exam");
     }
 
     // Don't allow updating critical fields if results exist
     if (exam.resultsPublished) {
-      const restrictedFields = ['totalMarks', 'passingMarks', 'examDate', 'startTime', 'endTime'];
-      const hasRestrictedChanges = restrictedFields.some(field => data[field as keyof IUpdateExamRequest] !== undefined);
-      
+      const restrictedFields = [
+        "totalMarks",
+        "passingMarks",
+        "examDate",
+        "startTime",
+        "endTime",
+      ];
+      const hasRestrictedChanges = restrictedFields.some(
+        (field) => data[field as keyof IUpdateExamRequest] !== undefined
+      );
+
       if (hasRestrictedChanges) {
-        throw new AppError(400, 'Cannot update critical fields when results are published');
+        throw new AppError(
+          400,
+          "Cannot update critical fields when results are published"
+        );
       }
     }
 
@@ -146,15 +191,33 @@ class ExamService {
         section: exam.section,
         subjectId: exam.subjectId,
         examDate: {
-          $gte: new Date(examDate.getFullYear(), examDate.getMonth(), examDate.getDate()),
-          $lt: new Date(examDate.getFullYear(), examDate.getMonth(), examDate.getDate() + 1),
+          $gte: new Date(
+            examDate.getFullYear(),
+            examDate.getMonth(),
+            examDate.getDate()
+          ),
+          $lt: new Date(
+            examDate.getFullYear(),
+            examDate.getMonth(),
+            examDate.getDate() + 1
+          ),
         },
         isActive: true,
       });
 
       for (const existingExam of conflictingExams) {
-        if (this.hasTimeConflict(startTime, endTime, existingExam.startTime, existingExam.endTime)) {
-          throw new AppError(400, `Time conflict with existing exam: ${existingExam.examName}`);
+        if (
+          this.hasTimeConflict(
+            startTime,
+            endTime,
+            existingExam.startTime,
+            existingExam.endTime
+          )
+        ) {
+          throw new AppError(
+            400,
+            `Time conflict with existing exam: ${existingExam.examName}`
+          );
         }
       }
     }
@@ -165,14 +228,16 @@ class ExamService {
       updateData.examDate = new Date(data.examDate) as any;
     }
 
-    const updatedExam = await Exam.findByIdAndUpdate(id, updateData, { new: true })
-      .populate('teacherId', 'userId teacherId')
-      .populate('subjectId', 'name code')
-      .populate('schoolId', 'name')
-      .populate('createdBy', 'firstName lastName');
+    const updatedExam = await Exam.findByIdAndUpdate(id, updateData, {
+      new: true,
+    })
+      .populate("teacherId", "userId teacherId")
+      .populate("subjectId", "name code")
+      .populate("schoolId", "name")
+      .populate("createdBy", "firstName lastName");
 
     if (!updatedExam) {
-      throw new AppError(404, 'Exam not found after update');
+      throw new AppError(404, "Exam not found after update");
     }
 
     return this.formatExamResponse(updatedExam);
@@ -182,19 +247,19 @@ class ExamService {
   async deleteExam(id: string, userId: string): Promise<void> {
     const exam = await Exam.findById(id);
     if (!exam) {
-      throw new AppError(404, 'Exam not found');
+      throw new AppError(404, "Exam not found");
     }
 
     // Verify teacher owns this exam or is admin
     const teacher = await Teacher.findOne({ userId });
     if (!teacher || exam.teacherId.toString() !== teacher._id.toString()) {
-      throw new AppError(403, 'Not authorized to delete this exam');
+      throw new AppError(403, "Not authorized to delete this exam");
     }
 
     // Check if results exist
     const resultCount = await ExamResult.countDocuments({ examId: id });
     if (resultCount > 0) {
-      throw new AppError(400, 'Cannot delete exam with existing results');
+      throw new AppError(400, "Cannot delete exam with existing results");
     }
 
     // Soft delete
@@ -205,51 +270,61 @@ class ExamService {
   async publishExam(id: string, userId: string): Promise<IExamResponse> {
     const exam = await Exam.findById(id);
     if (!exam) {
-      throw new AppError(404, 'Exam not found');
+      throw new AppError(404, "Exam not found");
     }
 
     // Verify teacher owns this exam or is admin
     const teacher = await Teacher.findOne({ userId });
     if (!teacher || exam.teacherId.toString() !== teacher._id.toString()) {
-      throw new AppError(403, 'Not authorized to publish this exam');
+      throw new AppError(403, "Not authorized to publish this exam");
     }
 
     exam.isPublished = true;
     await exam.save();
 
     const updatedExam = await Exam.findById(id)
-      .populate('teacherId', 'userId teacherId')
-      .populate('subjectId', 'name code')
-      .populate('schoolId', 'name')
-      .populate('createdBy', 'firstName lastName');
+      .populate("teacherId", "userId teacherId")
+      .populate("subjectId", "name code")
+      .populate("schoolId", "name")
+      .populate("createdBy", "firstName lastName");
 
     return this.formatExamResponse(updatedExam!);
   }
 
   // Get exams for teacher
-  async getExamsForTeacher(teacherId: string, filters?: IExamFilters): Promise<IExamResponse[]> {
+  async getExamsForTeacher(
+    teacherId: string,
+    filters?: IExamFilters
+  ): Promise<IExamResponse[]> {
     const teacher = await Teacher.findById(teacherId);
     if (!teacher) {
-      throw new AppError(404, 'Teacher not found');
+      throw new AppError(404, "Teacher not found");
     }
 
     const exams = await Exam.findByTeacher(teacherId);
-    return exams.map(exam => this.formatExamResponse(exam));
+    return exams.map((exam) => this.formatExamResponse(exam));
   }
 
   // Get exams for student
-  async getExamsForStudent(studentId: string, filters?: IExamFilters): Promise<IExamResponse[]> {
+  async getExamsForStudent(
+    studentId: string,
+    filters?: IExamFilters
+  ): Promise<IExamResponse[]> {
     const student = await Student.findById(studentId);
     if (!student) {
-      throw new AppError(404, 'Student not found');
+      throw new AppError(404, "Student not found");
     }
 
-    const exams = await Exam.findByClass(student.schoolId.toString(), student.grade, student.section);
-    
+    const exams = await Exam.findByClass(
+      student.schoolId.toString(),
+      student.grade,
+      student.section
+    );
+
     // Filter only published exams for students
-    const publishedExams = exams.filter(exam => exam.isPublished);
-    
-    return publishedExams.map(exam => this.formatExamResponse(exam));
+    const publishedExams = exams.filter((exam) => exam.isPublished);
+
+    return publishedExams.map((exam) => this.formatExamResponse(exam));
   }
 
   // Get exams for class
@@ -260,7 +335,7 @@ class ExamService {
     filters?: IExamFilters
   ): Promise<IExamResponse[]> {
     const exams = await Exam.findByClass(schoolId, grade, section);
-    return exams.map(exam => this.formatExamResponse(exam));
+    return exams.map((exam) => this.formatExamResponse(exam));
   }
 
   // Get exam schedule
@@ -278,40 +353,47 @@ class ExamService {
   }
 
   // Submit exam results
-  async submitExamResults(data: ISubmitResultRequest, userId: string): Promise<any> {
+  async submitExamResults(
+    data: ISubmitResultRequest,
+    userId: string
+  ): Promise<any> {
     // Verify exam exists
     const exam = await Exam.findById(data.examId);
     if (!exam) {
-      throw new AppError(404, 'Exam not found');
+      throw new AppError(404, "Exam not found");
     }
 
     // Verify teacher can submit results for this exam
     const teacher = await Teacher.findOne({ userId });
     if (!teacher || exam.teacherId.toString() !== teacher._id.toString()) {
-      throw new AppError(403, 'Not authorized to submit results for this exam');
+      throw new AppError(403, "Not authorized to submit results for this exam");
     }
 
     // Verify all students are eligible for this exam
     const eligibleStudents = await exam.getEligibleStudents();
-    const eligibleStudentIds = eligibleStudents.map(s => s._id.toString());
+    const eligibleStudentIds = eligibleStudents.map((s) => s._id.toString());
 
     const invalidStudents = data.results.filter(
-      result => !eligibleStudentIds.includes(result.studentId)
+      (result) => !eligibleStudentIds.includes(result.studentId)
     );
 
     if (invalidStudents.length > 0) {
-      throw new AppError(400, 'Some students are not eligible for this exam');
+      throw new AppError(400, "Some students are not eligible for this exam");
     }
 
     // Validate marks against total marks
     const invalidMarks = data.results.filter(
-      result => !result.isAbsent && 
-                result.marksObtained !== undefined && 
-                result.marksObtained > exam.totalMarks
+      (result) =>
+        !result.isAbsent &&
+        result.marksObtained !== undefined &&
+        result.marksObtained > exam.totalMarks
     );
 
     if (invalidMarks.length > 0) {
-      throw new AppError(400, 'Some marks exceed the total marks for this exam');
+      throw new AppError(
+        400,
+        "Some marks exceed the total marks for this exam"
+      );
     }
 
     // Process results
@@ -357,78 +439,88 @@ class ExamService {
   async publishExamResults(id: string, userId: string): Promise<IExamResponse> {
     const exam = await Exam.findById(id);
     if (!exam) {
-      throw new AppError(404, 'Exam not found');
+      throw new AppError(404, "Exam not found");
     }
 
     // Verify teacher owns this exam or is admin
     const teacher = await Teacher.findOne({ userId });
     if (!teacher || exam.teacherId.toString() !== teacher._id.toString()) {
-      throw new AppError(403, 'Not authorized to publish results for this exam');
+      throw new AppError(
+        403,
+        "Not authorized to publish results for this exam"
+      );
     }
 
     // Check if exam is completed
     if (!exam.isCompleted()) {
-      throw new AppError(400, 'Cannot publish results for ongoing or future exam');
+      throw new AppError(
+        400,
+        "Cannot publish results for ongoing or future exam"
+      );
     }
 
     // Check if results exist
     const resultCount = await ExamResult.countDocuments({ examId: id });
     if (resultCount === 0) {
-      throw new AppError(400, 'No results found to publish');
+      throw new AppError(400, "No results found to publish");
     }
 
     exam.resultsPublished = true;
     await exam.save();
 
     const updatedExam = await Exam.findById(id)
-      .populate('teacherId', 'userId teacherId')
-      .populate('subjectId', 'name code')
-      .populate('schoolId', 'name')
-      .populate('createdBy', 'firstName lastName');
+      .populate("teacherId", "userId teacherId")
+      .populate("subjectId", "name code")
+      .populate("schoolId", "name")
+      .populate("createdBy", "firstName lastName");
 
     return this.formatExamResponse(updatedExam!);
   }
 
   // Get exam results
-  async getExamResults(examId: string, userId: string, userRole: string): Promise<any[]> {
+  async getExamResults(
+    examId: string,
+    userId: string,
+    userRole: string
+  ): Promise<any[]> {
     const exam = await Exam.findById(examId);
     if (!exam) {
-      throw new AppError(404, 'Exam not found');
+      throw new AppError(404, "Exam not found");
     }
 
     // Check permissions
-    if (userRole === 'teacher') {
+    if (userRole === "teacher") {
       const teacher = await Teacher.findOne({ userId });
       if (!teacher || exam.teacherId.toString() !== teacher._id.toString()) {
-        throw new AppError(403, 'Not authorized to view results for this exam');
+        throw new AppError(403, "Not authorized to view results for this exam");
       }
-    } else if (userRole === 'student') {
+    } else if (userRole === "student") {
       // Students can only view their own results and only if published
       if (!exam.resultsPublished) {
-        throw new AppError(403, 'Results not yet published');
+        throw new AppError(403, "Results not yet published");
       }
     }
 
     const results = await ExamResult.find({ examId })
       .populate({
-        path: 'studentId',
-        select: 'userId rollNumber',
+        path: "studentId",
+        select: "userId rollNumber",
         populate: {
-          path: 'userId',
-          select: 'firstName lastName'
-        }
+          path: "userId",
+          select: "firstName lastName",
+        },
       })
       .sort({ marksObtained: -1 });
 
     // For students, return only their result
-    if (userRole === 'student') {
+    if (userRole === "student") {
       const student = await Student.findOne({ userId });
       if (!student) {
-        throw new AppError(404, 'Student not found');
+        throw new AppError(404, "Student not found");
       }
 
       const studentResult = results.find(
-        result => result.studentId._id.toString() === student._id.toString()
+        (result) => result.studentId._id.toString() === student._id.toString()
       );
 
       return studentResult ? [studentResult] : [];
@@ -438,17 +530,24 @@ class ExamService {
   }
 
   // Get exam statistics
-  async getExamStatistics(examId: string, userId: string, userRole: string): Promise<IExamStats> {
+  async getExamStatistics(
+    examId: string,
+    userId: string,
+    userRole: string
+  ): Promise<IExamStats> {
     const exam = await Exam.findById(examId);
     if (!exam) {
-      throw new AppError(404, 'Exam not found');
+      throw new AppError(404, "Exam not found");
     }
 
     // Check permissions
-    if (userRole === 'teacher') {
+    if (userRole === "teacher") {
       const teacher = await Teacher.findOne({ userId });
       if (!teacher || exam.teacherId.toString() !== teacher._id.toString()) {
-        throw new AppError(403, 'Not authorized to view statistics for this exam');
+        throw new AppError(
+          403,
+          "Not authorized to view statistics for this exam"
+        );
       }
     }
 
@@ -456,13 +555,20 @@ class ExamService {
   }
 
   // Get upcoming exams
-  async getUpcomingExams(schoolId: string, days: number = 30): Promise<IExamResponse[]> {
+  async getUpcomingExams(
+    schoolId: string,
+    days: number = 30
+  ): Promise<IExamResponse[]> {
     const exams = await Exam.findUpcoming(schoolId, days);
-    return exams.map(exam => this.formatExamResponse(exam));
+    return exams.map((exam) => this.formatExamResponse(exam));
   }
 
   // Get exam calendar for academic calendar integration
-  async getExamCalendar(schoolId: string, startDate: string, endDate: string): Promise<any> {
+  async getExamCalendar(
+    schoolId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<any> {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
@@ -470,9 +576,9 @@ class ExamService {
 
     // Group exams by date for calendar view
     const examsByDate: { [key: string]: IExamResponse[] } = {};
-    
-    exams.forEach(exam => {
-      const dateKey = exam.examDate.toISOString().split('T')[0];
+
+    exams.forEach((exam) => {
+      const dateKey = exam.examDate.toISOString().split("T")[0];
       if (!examsByDate[dateKey]) {
         examsByDate[dateKey] = [];
       }
@@ -480,10 +586,12 @@ class ExamService {
     });
 
     // Convert to calendar format
-    const calendarData = Object.entries(examsByDate).map(([date, examList]) => ({
-      date: new Date(date),
-      exams: examList,
-    }));
+    const calendarData = Object.entries(examsByDate).map(
+      ([date, examList]) => ({
+        date: new Date(date),
+        exams: examList,
+      })
+    );
 
     return {
       startDate: start,
@@ -491,10 +599,10 @@ class ExamService {
       exams: calendarData,
       summary: {
         totalExams: exams.length,
-        upcomingExams: exams.filter(exam => exam.isUpcoming()).length,
-        ongoingExams: exams.filter(exam => exam.isOngoing()).length,
-        completedExams: exams.filter(exam => exam.isCompleted()).length,
-        publishedExams: exams.filter(exam => exam.isPublished).length,
+        upcomingExams: exams.filter((exam) => exam.isUpcoming()).length,
+        ongoingExams: exams.filter((exam) => exam.isOngoing()).length,
+        completedExams: exams.filter((exam) => exam.isCompleted()).length,
+        publishedExams: exams.filter((exam) => exam.isPublished).length,
       },
     };
   }
@@ -506,10 +614,10 @@ class ExamService {
     startTime2: string,
     endTime2: string
   ): boolean {
-    const [start1Hours, start1Minutes] = startTime1.split(':').map(Number);
-    const [end1Hours, end1Minutes] = endTime1.split(':').map(Number);
-    const [start2Hours, start2Minutes] = startTime2.split(':').map(Number);
-    const [end2Hours, end2Minutes] = endTime2.split(':').map(Number);
+    const [start1Hours, start1Minutes] = startTime1.split(":").map(Number);
+    const [end1Hours, end1Minutes] = endTime1.split(":").map(Number);
+    const [start2Hours, start2Minutes] = startTime2.split(":").map(Number);
+    const [end2Hours, end2Minutes] = endTime2.split(":").map(Number);
 
     const start1TotalMinutes = start1Hours * 60 + start1Minutes;
     const end1TotalMinutes = end1Hours * 60 + end1Minutes;
@@ -517,32 +625,37 @@ class ExamService {
     const end2TotalMinutes = end2Hours * 60 + end2Minutes;
 
     // Check for overlap
-    return !(end1TotalMinutes <= start2TotalMinutes || end2TotalMinutes <= start1TotalMinutes);
+    return !(
+      end1TotalMinutes <= start2TotalMinutes ||
+      end2TotalMinutes <= start1TotalMinutes
+    );
   }
 
   // Helper method to format exam response
   private formatExamResponse(exam: IExamDocument): IExamResponse {
     const formatted = exam.toJSON() as any;
-    
+
     // Add populated data if available
-    if (exam.schoolId && typeof exam.schoolId === 'object') {
+    if (exam.schoolId && typeof exam.schoolId === "object") {
       formatted.school = {
         id: exam.schoolId._id.toString(),
         name: (exam.schoolId as any).name,
       };
     }
 
-    if (exam.teacherId && typeof exam.teacherId === 'object') {
+    if (exam.teacherId && typeof exam.teacherId === "object") {
       const teacher = exam.teacherId as any;
       formatted.teacher = {
         id: teacher._id.toString(),
         userId: teacher.userId?.toString(),
         teacherId: teacher.teacherId,
-        fullName: teacher.userId ? `${teacher.userId.firstName} ${teacher.userId.lastName}` : 'Unknown Teacher',
+        fullName: teacher.userId
+          ? `${teacher.userId.firstName} ${teacher.userId.lastName}`
+          : "Unknown Teacher",
       };
     }
 
-    if (exam.subjectId && typeof exam.subjectId === 'object') {
+    if (exam.subjectId && typeof exam.subjectId === "object") {
       const subject = exam.subjectId as any;
       formatted.subject = {
         id: subject._id.toString(),
@@ -551,7 +664,7 @@ class ExamService {
       };
     }
 
-    if (exam.createdBy && typeof exam.createdBy === 'object') {
+    if (exam.createdBy && typeof exam.createdBy === "object") {
       const creator = exam.createdBy as any;
       formatted.createdBy = {
         id: creator._id.toString(),

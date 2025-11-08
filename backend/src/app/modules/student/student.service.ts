@@ -130,9 +130,7 @@ class StudentService {
       session.startTransaction();
 
       // Verify school exists and is active
-      schoolDoc = await School.findById(studentData.schoolId).session(
-        session
-      );
+      schoolDoc = await School.findById(studentData.schoolId).session(session);
       if (!schoolDoc) {
         throw new AppError(httpStatus.NOT_FOUND, "School not found");
       }
@@ -337,8 +335,8 @@ class StudentService {
                 email: parentInfo.email, // Make sure to save the email
               },
             ],
-              { session }
-            );
+            { session }
+          );
 
           // Generate parent ID for the Parent model - with retry logic for duplicates
           let parentId: string = "";
@@ -670,30 +668,44 @@ class StudentService {
         try {
           await StudentPhoto.deleteMany({ studentId: studentDoc._id });
         } catch (cleanupError) {
-          console.error("Failed to remove student photos after error:", cleanupError);
+          console.error(
+            "Failed to remove student photos after error:",
+            cleanupError
+          );
         }
 
         if (uploadedPublicIds.length > 0) {
           try {
             await Promise.all(
-              uploadedPublicIds.map((publicId) => deleteFromCloudinary(publicId))
+              uploadedPublicIds.map((publicId) =>
+                deleteFromCloudinary(publicId)
+              )
             );
           } catch (cleanupError) {
-            console.error("Failed to delete Cloudinary assets after error:", cleanupError);
+            console.error(
+              "Failed to delete Cloudinary assets after error:",
+              cleanupError
+            );
           }
         }
 
         try {
           await Student.deleteOne({ _id: studentDoc._id });
         } catch (cleanupError) {
-          console.error("Failed to delete student record after photo failure:", cleanupError);
+          console.error(
+            "Failed to delete student record after photo failure:",
+            cleanupError
+          );
         }
 
         if (studentUserDoc) {
           try {
             await User.deleteOne({ _id: studentUserDoc._id });
           } catch (cleanupError) {
-            console.error("Failed to delete student user after photo failure:", cleanupError);
+            console.error(
+              "Failed to delete student user after photo failure:",
+              cleanupError
+            );
           }
         }
 
@@ -701,7 +713,10 @@ class StudentService {
           try {
             await Parent.deleteOne({ _id: createdParentDoc._id });
           } catch (cleanupError) {
-            console.error("Failed to delete parent record after photo failure:", cleanupError);
+            console.error(
+              "Failed to delete parent record after photo failure:",
+              cleanupError
+            );
           }
         }
 
@@ -709,7 +724,10 @@ class StudentService {
           try {
             await User.deleteOne({ _id: parentUserDocs[0]._id });
           } catch (cleanupError) {
-            console.error("Failed to delete parent user after photo failure:", cleanupError);
+            console.error(
+              "Failed to delete parent user after photo failure:",
+              cleanupError
+            );
           }
         }
 
@@ -1747,15 +1765,19 @@ class StudentService {
 
     // Calculate statistics
     const totalDays = attendanceRecords.length;
-    const presentDays = attendanceRecords.filter(r =>
-      ['present', 'late'].includes(r.finalStatus)
+    const presentDays = attendanceRecords.filter((r) =>
+      ["present", "late"].includes(r.finalStatus)
     ).length;
-    const absentDays = attendanceRecords.filter(r => r.finalStatus === 'absent').length;
-    const lateDays = attendanceRecords.filter(r => r.finalStatus === 'late').length;
+    const absentDays = attendanceRecords.filter(
+      (r) => r.finalStatus === "absent"
+    ).length;
+    const lateDays = attendanceRecords.filter(
+      (r) => r.finalStatus === "late"
+    ).length;
 
     // Calculate monthly statistics
     const monthlyMap = new Map<string, any>();
-    attendanceRecords.forEach(record => {
+    attendanceRecords.forEach((record) => {
       const date = new Date(record.date);
       const key = `${date.getFullYear()}-${date.getMonth() + 1}`;
 
@@ -1772,23 +1794,23 @@ class StudentService {
 
       const stats = monthlyMap.get(key);
       stats.totalDays++;
-      if (record.finalStatus === 'present') stats.presentDays++;
-      if (record.finalStatus === 'absent') stats.absentDays++;
-      if (record.finalStatus === 'late') stats.lateDays++;
+      if (record.finalStatus === "present") stats.presentDays++;
+      if (record.finalStatus === "absent") stats.absentDays++;
+      if (record.finalStatus === "late") stats.lateDays++;
     });
 
-    const monthlyStats = Array.from(monthlyMap.values()).map(m => ({
+    const monthlyStats = Array.from(monthlyMap.values()).map((m) => ({
       ...m,
-      percentage: m.totalDays > 0
-        ? Math.round((m.presentDays / m.totalDays) * 100)
-        : 0,
+      percentage:
+        m.totalDays > 0 ? Math.round((m.presentDays / m.totalDays) * 100) : 0,
     }));
 
     // Format recent records - REMOVE subject/period, ADD auto-detect info
-    const recentRecords = attendanceRecords.slice(0, 10).map(record => ({
+    const recentRecords = attendanceRecords.slice(0, 10).map((record) => ({
       date: record.date,
       status: record.finalStatus,
-      markedAt: record.teacherMarkedAt || record.autoMarkedAt || record.finalizedAt,
+      markedAt:
+        record.teacherMarkedAt || record.autoMarkedAt || record.finalizedAt,
       autoDetected: !!record.autoStatus,
       teacherMarked: !!record.teacherStatus,
       source: record.finalSource,
@@ -1800,9 +1822,8 @@ class StudentService {
         presentDays,
         absentDays,
         lateDays,
-        attendancePercentage: totalDays > 0
-          ? Math.round((presentDays / totalDays) * 100)
-          : 0,
+        attendancePercentage:
+          totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0,
       },
       monthlyStats,
       recentRecords,
