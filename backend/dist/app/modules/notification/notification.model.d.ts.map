@@ -1,1 +1,1 @@
-{"version":3,"file":"notification.model.d.ts","sourceRoot":"","sources":["../../../../src/app/modules/notification/notification.model.ts"],"names":[],"mappings":"AACA,OAAO,EAEL,kBAAkB,EAEnB,MAAM,0BAA0B,CAAC;AAiNlC,eAAO,MAAM,YAAY,oBAGxB,CAAC"}
+{"version":3,"file":"notification.model.d.ts","sourceRoot":"","sources":["../../../../src/app/modules/notification/notification.model.ts"],"names":[],"mappings":"AACA,OAAO,EAEL,kBAAkB,EAEnB,MAAM,0BAA0B,CAAC;AAoPlC,eAAO,MAAM,YAAY,oBAGxB,CAAC"}

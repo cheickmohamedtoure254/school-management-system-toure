@@ -190,7 +190,7 @@ studentFeeRecordSchema.pre("save", function (next) {
 studentFeeRecordSchema.statics.createForStudent = async function (studentId, schoolId, grade, academicYear, feeStructureId, totalFeeAmount, dueDate = 10, startMonth = fee_interface_1.Month.APRIL) {
     const monthlyAmount = Math.round(totalFeeAmount / 12);
     const monthlyPayments = [];
-    const validDueDate = (dueDate && dueDate >= 1 && dueDate <= 31) ? dueDate : 10;
+    const validDueDate = dueDate && dueDate >= 1 && dueDate <= 31 ? dueDate : 10;
     for (let i = 0; i < 12; i++) {
         const month = ((startMonth + i - 1) % 12) + 1;
         const year = parseInt(academicYear.split("-")[0]) + (month < startMonth ? 1 : 0);
@@ -227,7 +227,8 @@ studentFeeRecordSchema.methods.recordPayment = async function (month, amount) {
     }
     monthlyPayment.paidAmount += amount;
     monthlyPayment.paidDate = new Date();
-    if (monthlyPayment.paidAmount >= monthlyPayment.dueAmount + monthlyPayment.lateFee) {
+    if (monthlyPayment.paidAmount >=
+        monthlyPayment.dueAmount + monthlyPayment.lateFee) {
         monthlyPayment.status = fee_interface_1.PaymentStatus.PAID;
     }
     else {
@@ -278,7 +279,7 @@ studentFeeRecordSchema.statics.findDefaulters = async function (schoolId, graceP
         status: { $in: [fee_interface_1.PaymentStatus.OVERDUE, fee_interface_1.PaymentStatus.PARTIAL] },
         "monthlyPayments.dueDate": { $lt: cutoffDate },
         "monthlyPayments.status": {
-            $in: [fee_interface_1.PaymentStatus.PENDING, fee_interface_1.PaymentStatus.PARTIAL]
+            $in: [fee_interface_1.PaymentStatus.PENDING, fee_interface_1.PaymentStatus.PARTIAL],
         },
     }).populate("student");
 };

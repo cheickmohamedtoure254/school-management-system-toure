@@ -1,4 +1,4 @@
-import { IDisciplinaryActionModel, IPunishmentDocument, IRedWarrantDocument } from './disciplinary.interface';
+import { IDisciplinaryActionModel, IPunishmentDocument, IRedWarrantDocument } from "./disciplinary.interface";
 export declare const DisciplinaryAction: IDisciplinaryActionModel;
 export declare const Punishment: import("mongoose").Model<IPunishmentDocument, {}, {}, {}, import("mongoose").Document<unknown, {}, IPunishmentDocument, {}, {}> & IPunishmentDocument & Required<{
     _id: unknown;

@@ -84,14 +84,16 @@ feeDefaulterSchema.statics.syncDefaultersForSchool = async function (schoolId, g
                 payment.dueDate < cutoffDate &&
                 !payment.waived) {
                 overdueMonths.push(payment.month);
-                totalDueAmount += payment.dueAmount - payment.paidAmount + payment.lateFee;
+                totalDueAmount +=
+                    payment.dueAmount - payment.paidAmount + payment.lateFee;
                 if (!firstDueDate || payment.dueDate < firstDueDate) {
                     firstDueDate = payment.dueDate;
                 }
             }
         });
         if (overdueMonths.length > 0 && firstDueDate !== null) {
-            const daysSinceFirstDue = Math.floor((now.getTime() - firstDueDate.getTime()) / (1000 * 60 * 60 * 24));
+            const daysSinceFirstDue = Math.floor((now.getTime() - firstDueDate.getTime()) /
+                (1000 * 60 * 60 * 24));
             defaultersToUpsert.push({
                 student: record.student._id,
                 studentFeeRecord: record._id,

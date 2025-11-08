@@ -1,4 +1,4 @@
-import { ICreateExamRequest, IUpdateExamRequest, ISubmitResultRequest, IExamResponse, IExamSchedule, IExamStats, IExamFilters } from './exam.interface';
+import { ICreateExamRequest, IUpdateExamRequest, ISubmitResultRequest, IExamResponse, IExamSchedule, IExamStats, IExamFilters } from "./exam.interface";
 declare class ExamService {
     createExam(data: ICreateExamRequest, userId: string): Promise<IExamResponse>;
     getExamById(id: string, userId: string, userRole: string): Promise<IExamResponse>;

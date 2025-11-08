@@ -53,31 +53,39 @@ class AcademicCalendarService {
                 endTime: eventData.endTime,
                 venue: eventData.location,
                 targetAudience: eventData.targetAudience.allSchool ? "all" : "specific",
-                specificAudience: !eventData.targetAudience.allSchool ? {
-                    grades: eventData.targetAudience.grades?.map(g => parseInt(g)) || [],
-                    sections: eventData.targetAudience.classes || [],
-                    teacherIds: eventData.targetAudience.teachers?.map(t => new mongoose_1.Types.ObjectId(t)) || [],
-                    studentIds: eventData.targetAudience.students?.map(s => new mongoose_1.Types.ObjectId(s)) || [],
-                } : undefined,
+                specificAudience: !eventData.targetAudience.allSchool
+                    ? {
+                        grades: eventData.targetAudience.grades?.map((g) => parseInt(g)) || [],
+                        sections: eventData.targetAudience.classes || [],
+                        teacherIds: eventData.targetAudience.teachers?.map((t) => new mongoose_1.Types.ObjectId(t)) || [],
+                        studentIds: eventData.targetAudience.students?.map((s) => new mongoose_1.Types.ObjectId(s)) || [],
+                    }
+                    : undefined,
                 priority: eventData.priority,
                 isRecurring: eventData.isRecurring,
-                recurrencePattern: eventData.isRecurring ? {
-                    frequency: eventData.recurrence?.frequency || "weekly",
-                    interval: eventData.recurrence?.interval || 1,
-                    daysOfWeek: (eventData.recurrence?.frequency || "weekly") === "weekly"
-                        ? [new Date(eventData.startDate).getDay()]
-                        : undefined,
-                    dayOfMonth: (eventData.recurrence?.frequency || "weekly") === "monthly"
-                        ? new Date(eventData.startDate).getDate()
-                        : undefined,
-                    endDate: eventData.recurrence?.endDate ? new Date(eventData.recurrence.endDate) : undefined,
-                    occurrences: eventData.recurrence?.occurrences || 5,
-                } : undefined,
+                recurrencePattern: eventData.isRecurring
+                    ? {
+                        frequency: eventData.recurrence?.frequency || "weekly",
+                        interval: eventData.recurrence?.interval || 1,
+                        daysOfWeek: (eventData.recurrence?.frequency || "weekly") === "weekly"
+                            ? [new Date(eventData.startDate).getDay()]
+                            : undefined,
+                        dayOfMonth: (eventData.recurrence?.frequency || "weekly") === "monthly"
+                            ? new Date(eventData.startDate).getDate()
+                            : undefined,
+                        endDate: eventData.recurrence?.endDate
+                            ? new Date(eventData.recurrence.endDate)
+                            : undefined,
+                        occurrences: eventData.recurrence?.occurrences || 5,
+                    }
+                    : undefined,
                 color: this.getDefaultColor(eventData.eventType),
                 createdBy: eventData.organizerId,
                 isActive: eventData.status === "published",
             };
-            const newEvent = await academic_calendar_model_1.AcademicCalendar.create([mappedEventData], { session });
+            const newEvent = await academic_calendar_model_1.AcademicCalendar.create([mappedEventData], {
+                session,
+            });
             await session.commitTransaction();
             return this.formatCalendarEventResponse(newEvent[0]);
         }

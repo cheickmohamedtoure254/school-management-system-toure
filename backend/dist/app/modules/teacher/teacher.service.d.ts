@@ -47,7 +47,7 @@ declare class TeacherService {
         period: number;
         students: Array<{
             studentId: string;
-            status: 'present' | 'absent' | 'late' | 'excused';
+            status: "present" | "absent" | "late" | "excused";
         }>;
     }): Promise<any>;
     getStudentsForAttendance(userId: string, classId: string, subjectId: string, period: number): Promise<any>;

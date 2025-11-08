@@ -6,21 +6,23 @@ const AppError_1 = require("../../errors/AppError");
 const createEvent = async (eventData, userId) => {
     const event = new event_model_1.Event({
         ...eventData,
-        createdBy: userId
+        createdBy: userId,
     });
     await event.save();
     return event.populate([
-        { path: 'schoolId', select: 'name' },
-        { path: 'createdBy', select: 'firstName lastName' }
+        { path: "schoolId", select: "name" },
+        { path: "createdBy", select: "firstName lastName" },
     ]);
 };
 const getEvents = async (schoolId, userRole, userGrade, userSection, filters) => {
-    const { type, startDate, endDate, grade, section, page = 1, limit = 20, isActive = true } = filters || {};
+    const { type, startDate, endDate, grade, section, page = 1, limit = 20, isActive = true, } = filters || {};
     const query = {
         isActive,
-        'targetAudience.roles': { $in: [userRole] }
+        "targetAudience.roles": { $in: [userRole] },
     };
-    if (userRole !== 'superadmin' && schoolId && schoolId.toString() !== 'system') {
+    if (userRole !== "superadmin" &&
+        schoolId &&
+        schoolId.toString() !== "system") {
         query.schoolId = schoolId;
     }
     if (type) {
@@ -33,14 +35,14 @@ const getEvents = async (schoolId, userRole, userGrade, userSection, filters) =>
         if (endDate)
             query.date.$lte = new Date(endDate);
     }
-    if (userRole === 'student' || userRole === 'parent') {
+    if (userRole === "student" || userRole === "parent") {
         const gradeConditions = [];
         const sectionConditions = [];
         if (userGrade) {
-            gradeConditions.push({ 'targetAudience.grades': { $size: 0 } }, { 'targetAudience.grades': { $in: [userGrade] } });
+            gradeConditions.push({ "targetAudience.grades": { $size: 0 } }, { "targetAudience.grades": { $in: [userGrade] } });
         }
         if (userSection) {
-            sectionConditions.push({ 'targetAudience.sections': { $size: 0 } }, { 'targetAudience.sections': { $in: [userSection] } });
+            sectionConditions.push({ "targetAudience.sections": { $size: 0 } }, { "targetAudience.sections": { $in: [userSection] } });
         }
         const mongoQuery = query;
         if (gradeConditions.length > 0 && sectionConditions.length > 0) {
@@ -54,30 +56,30 @@ const getEvents = async (schoolId, userRole, userGrade, userSection, filters) =>
             mongoQuery.$or = sectionConditions;
         }
     }
-    if (grade && (userRole === 'admin' || userRole === 'teacher')) {
-        query['targetAudience.grades'] = { $in: [grade] };
+    if (grade && (userRole === "admin" || userRole === "teacher")) {
+        query["targetAudience.grades"] = { $in: [grade] };
     }
-    if (section && (userRole === 'admin' || userRole === 'teacher')) {
-        query['targetAudience.sections'] = { $in: [section] };
+    if (section && (userRole === "admin" || userRole === "teacher")) {
+        query["targetAudience.sections"] = { $in: [section] };
     }
     const skip = (page - 1) * limit;
     const [events, total] = await Promise.all([
         event_model_1.Event.find(query)
             .populate([
-            { path: 'schoolId', select: 'name' },
-            { path: 'createdBy', select: 'firstName lastName' }
+            { path: "schoolId", select: "name" },
+            { path: "createdBy", select: "firstName lastName" },
         ])
             .sort({ date: 1, createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .lean(),
-        event_model_1.Event.countDocuments(query)
+        event_model_1.Event.countDocuments(query),
     ]);
     return {
         events,
         total,
         page,
-        limit
+        limit,
     };
 };
 const getTodaysEvents = async (schoolId, userRole, userGrade, userSection) => {
@@ -86,23 +88,25 @@ const getTodaysEvents = async (schoolId, userRole, userGrade, userSection) => {
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
     const query = {
         isActive: true,
-        'targetAudience.roles': { $in: [userRole] },
+        "targetAudience.roles": { $in: [userRole] },
         date: {
             $gte: startOfDay,
-            $lte: endOfDay
-        }
+            $lte: endOfDay,
+        },
     };
-    if (userRole !== 'superadmin' && schoolId && schoolId.toString() !== 'system') {
+    if (userRole !== "superadmin" &&
+        schoolId &&
+        schoolId.toString() !== "system") {
         query.schoolId = schoolId;
     }
-    if (userRole === 'student' || userRole === 'parent') {
+    if (userRole === "student" || userRole === "parent") {
         const gradeConditions = [];
         const sectionConditions = [];
         if (userGrade) {
-            gradeConditions.push({ 'targetAudience.grades': { $size: 0 } }, { 'targetAudience.grades': { $in: [userGrade] } });
+            gradeConditions.push({ "targetAudience.grades": { $size: 0 } }, { "targetAudience.grades": { $in: [userGrade] } });
         }
         if (userSection) {
-            sectionConditions.push({ 'targetAudience.sections': { $size: 0 } }, { 'targetAudience.sections': { $in: [userSection] } });
+            sectionConditions.push({ "targetAudience.sections": { $size: 0 } }, { "targetAudience.sections": { $in: [userSection] } });
         }
         const mongoQuery = query;
         if (gradeConditions.length > 0 && sectionConditions.length > 0) {
@@ -118,8 +122,8 @@ const getTodaysEvents = async (schoolId, userRole, userGrade, userSection) => {
     }
     return event_model_1.Event.find(query)
         .populate([
-        { path: 'schoolId', select: 'name' },
-        { path: 'createdBy', select: 'firstName lastName' }
+        { path: "schoolId", select: "name" },
+        { path: "createdBy", select: "firstName lastName" },
     ])
         .sort({ time: 1, createdAt: -1 })
         .lean();
@@ -127,19 +131,19 @@ const getTodaysEvents = async (schoolId, userRole, userGrade, userSection) => {
 const getEventById = async (id, schoolId) => {
     const event = await event_model_1.Event.findOne({ _id: id, schoolId })
         .populate([
-        { path: 'schoolId', select: 'name' },
-        { path: 'createdBy', select: 'firstName lastName' }
+        { path: "schoolId", select: "name" },
+        { path: "createdBy", select: "firstName lastName" },
     ])
         .lean();
     if (!event) {
-        throw new AppError_1.AppError(404, 'Event not found');
+        throw new AppError_1.AppError(404, "Event not found");
     }
     return event;
 };
 const updateEvent = async (id, updateData, schoolId, userId) => {
     const event = await event_model_1.Event.findOne({ _id: id, schoolId });
     if (!event) {
-        throw new AppError_1.AppError(404, 'Event not found');
+        throw new AppError_1.AppError(404, "Event not found");
     }
     const user = await event_model_1.Event.findById(userId);
     if (event.createdBy.toString() !== userId.toString() && user) {
@@ -147,14 +151,14 @@ const updateEvent = async (id, updateData, schoolId, userId) => {
     Object.assign(event, updateData);
     await event.save();
     return event.populate([
-        { path: 'schoolId', select: 'name' },
-        { path: 'createdBy', select: 'firstName lastName' }
+        { path: "schoolId", select: "name" },
+        { path: "createdBy", select: "firstName lastName" },
     ]);
 };
 const deleteEvent = async (id, schoolId, userId) => {
     const event = await event_model_1.Event.findOne({ _id: id, schoolId });
     if (!event) {
-        throw new AppError_1.AppError(404, 'Event not found');
+        throw new AppError_1.AppError(404, "Event not found");
     }
     if (event.createdBy.toString() !== userId.toString()) {
     }
@@ -164,24 +168,26 @@ const getUpcomingEvents = async (schoolId, userRole, userGrade, userSection, lim
     const now = new Date();
     const query = {
         isActive: true,
-        'targetAudience.roles': { $in: [userRole] },
-        date: { $gte: now }
+        "targetAudience.roles": { $in: [userRole] },
+        date: { $gte: now },
     };
-    if (userRole !== 'superadmin' && schoolId && schoolId.toString() !== 'system') {
+    if (userRole !== "superadmin" &&
+        schoolId &&
+        schoolId.toString() !== "system") {
         query.schoolId = schoolId;
     }
-    if (userRole === 'student' || userRole === 'parent') {
+    if (userRole === "student" || userRole === "parent") {
         if (userGrade) {
-            query['targetAudience.grades'] = { $in: [userGrade] };
+            query["targetAudience.grades"] = { $in: [userGrade] };
         }
         if (userSection) {
-            query['targetAudience.sections'] = { $in: [userSection] };
+            query["targetAudience.sections"] = { $in: [userSection] };
         }
     }
     return event_model_1.Event.find(query)
         .populate([
-        { path: 'schoolId', select: 'name' },
-        { path: 'createdBy', select: 'firstName lastName' }
+        { path: "schoolId", select: "name" },
+        { path: "createdBy", select: "firstName lastName" },
     ])
         .sort({ date: 1, time: 1 })
         .limit(limit)
@@ -194,6 +200,6 @@ exports.eventService = {
     getEventById,
     updateEvent,
     deleteEvent,
-    getUpcomingEvents
+    getUpcomingEvents,
 };
 //# sourceMappingURL=event.service.js.map

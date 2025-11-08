@@ -1,1 +1,1 @@
-{"version":3,"file":"studentFeeRecord.model.d.ts","sourceRoot":"","sources":["../../../../src/app/modules/fee/studentFeeRecord.model.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,iBAAiB,EAAiC,MAAM,iBAAiB,CAAC;AA2XnF,QAAA,MAAM,gBAAgB;;;;OAGrB,CAAC;AAEF,eAAe,gBAAgB,CAAC"}
+{"version":3,"file":"studentFeeRecord.model.d.ts","sourceRoot":"","sources":["../../../../src/app/modules/fee/studentFeeRecord.model.ts"],"names":[],"mappings":"AACA,OAAO,EACL,iBAAiB,EAIlB,MAAM,iBAAiB,CAAC;AAmYzB,QAAA,MAAM,gBAAgB;;;;OAGrB,CAAC;AAEF,eAAe,gBAAgB,CAAC"}

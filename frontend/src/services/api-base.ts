@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Base API URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = "https://sms-backend-783m.onrender.com"
 const API_TIMEOUT =
   Number((import.meta.env.VITE_API_TIMEOUT as string | undefined) ?? "") ||
   180000;

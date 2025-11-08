@@ -1283,11 +1283,11 @@ class StudentService {
             .sort({ date: -1 })
             .lean();
         const totalDays = attendanceRecords.length;
-        const presentDays = attendanceRecords.filter(r => ['present', 'late'].includes(r.finalStatus)).length;
-        const absentDays = attendanceRecords.filter(r => r.finalStatus === 'absent').length;
-        const lateDays = attendanceRecords.filter(r => r.finalStatus === 'late').length;
+        const presentDays = attendanceRecords.filter((r) => ["present", "late"].includes(r.finalStatus)).length;
+        const absentDays = attendanceRecords.filter((r) => r.finalStatus === "absent").length;
+        const lateDays = attendanceRecords.filter((r) => r.finalStatus === "late").length;
         const monthlyMap = new Map();
-        attendanceRecords.forEach(record => {
+        attendanceRecords.forEach((record) => {
             const date = new Date(record.date);
             const key = `${date.getFullYear()}-${date.getMonth() + 1}`;
             if (!monthlyMap.has(key)) {
@@ -1302,20 +1302,18 @@ class StudentService {
             }
             const stats = monthlyMap.get(key);
             stats.totalDays++;
-            if (record.finalStatus === 'present')
+            if (record.finalStatus === "present")
                 stats.presentDays++;
-            if (record.finalStatus === 'absent')
+            if (record.finalStatus === "absent")
                 stats.absentDays++;
-            if (record.finalStatus === 'late')
+            if (record.finalStatus === "late")
                 stats.lateDays++;
         });
-        const monthlyStats = Array.from(monthlyMap.values()).map(m => ({
+        const monthlyStats = Array.from(monthlyMap.values()).map((m) => ({
             ...m,
-            percentage: m.totalDays > 0
-                ? Math.round((m.presentDays / m.totalDays) * 100)
-                : 0,
+            percentage: m.totalDays > 0 ? Math.round((m.presentDays / m.totalDays) * 100) : 0,
         }));
-        const recentRecords = attendanceRecords.slice(0, 10).map(record => ({
+        const recentRecords = attendanceRecords.slice(0, 10).map((record) => ({
             date: record.date,
             status: record.finalStatus,
             markedAt: record.teacherMarkedAt || record.autoMarkedAt || record.finalizedAt,
@@ -1329,9 +1327,7 @@ class StudentService {
                 presentDays,
                 absentDays,
                 lateDays,
-                attendancePercentage: totalDays > 0
-                    ? Math.round((presentDays / totalDays) * 100)
-                    : 0,
+                attendancePercentage: totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0,
             },
             monthlyStats,
             recentRecords,

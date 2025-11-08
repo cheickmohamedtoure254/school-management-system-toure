@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { IEvent } from './event.interface';
+import { Types } from "mongoose";
+import { IEvent } from "./event.interface";
 export declare const eventService: {
     createEvent: (eventData: IEvent, userId: Types.ObjectId) => Promise<any>;
     getEvents: (schoolId: Types.ObjectId, userRole: string, userGrade?: number, userSection?: string, filters?: any) => Promise<{

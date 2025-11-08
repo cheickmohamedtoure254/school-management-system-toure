@@ -355,15 +355,16 @@ class TeacherService {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
             if (teacher.subjects && teacher.subjects.length > 0) {
-                const subjectObjectIds = teacher.subjects.filter(subject => typeof subject === 'string' && /^[0-9a-fA-F]{24}$/.test(subject));
+                const subjectObjectIds = teacher.subjects.filter((subject) => typeof subject === "string" && /^[0-9a-fA-F]{24}$/.test(subject));
                 if (subjectObjectIds.length > 0) {
-                    const { Subject } = await Promise.resolve().then(() => __importStar(require('../subject/subject.model')));
+                    const { Subject } = await Promise.resolve().then(() => __importStar(require("../subject/subject.model")));
                     const subjectDocs = await Subject.find({
-                        _id: { $in: subjectObjectIds.map(id => new mongoose_1.Types.ObjectId(id)) }
-                    }).select('name');
-                    const subjectMap = new Map(subjectDocs.map(doc => [doc._id.toString(), doc.name]));
-                    teacher.subjects = teacher.subjects.map(subject => {
-                        if (typeof subject === 'string' && /^[0-9a-fA-F]{24}$/.test(subject)) {
+                        _id: { $in: subjectObjectIds.map((id) => new mongoose_1.Types.ObjectId(id)) },
+                    }).select("name");
+                    const subjectMap = new Map(subjectDocs.map((doc) => [doc._id.toString(), doc.name]));
+                    teacher.subjects = teacher.subjects.map((subject) => {
+                        if (typeof subject === "string" &&
+                            /^[0-9a-fA-F]{24}$/.test(subject)) {
                             return subjectMap.get(subject) || subject;
                         }
                         return subject;
@@ -582,8 +583,14 @@ class TeacherService {
             }
             const [totalTeachers, activeTeachers, classTeachers, designationStats, subjectStats, experienceStats, recentJoining,] = await Promise.all([
                 teacher_model_1.Teacher.countDocuments({ schoolId: new mongoose_1.Types.ObjectId(schoolId) }),
-                teacher_model_1.Teacher.countDocuments({ schoolId: new mongoose_1.Types.ObjectId(schoolId), isActive: true }),
-                teacher_model_1.Teacher.countDocuments({ schoolId: new mongoose_1.Types.ObjectId(schoolId), isClassTeacher: true }),
+                teacher_model_1.Teacher.countDocuments({
+                    schoolId: new mongoose_1.Types.ObjectId(schoolId),
+                    isActive: true,
+                }),
+                teacher_model_1.Teacher.countDocuments({
+                    schoolId: new mongoose_1.Types.ObjectId(schoolId),
+                    isClassTeacher: true,
+                }),
                 teacher_model_1.Teacher.aggregate([
                     { $match: { schoolId: new mongoose_1.Types.ObjectId(schoolId) } },
                     { $group: { _id: "$designation", count: { $sum: 1 } } },
@@ -709,22 +716,25 @@ class TeacherService {
         const totalExperience = teacher.experience?.totalYears || 0;
         let subjects = teacher.subjects || [];
         if (subjects.length > 0) {
-            const subjectObjectIds = subjects.filter((subject) => typeof subject === 'string' && /^[0-9a-fA-F]{24}$/.test(subject));
+            const subjectObjectIds = subjects.filter((subject) => typeof subject === "string" && /^[0-9a-fA-F]{24}$/.test(subject));
             if (subjectObjectIds.length > 0) {
                 try {
                     const subjectDocs = await subject_model_1.Subject.find({
-                        _id: { $in: subjectObjectIds.map((id) => new mongoose_1.Types.ObjectId(id)) }
-                    }).select('name');
-                    const subjectMap = new Map(subjectDocs.map(doc => [doc._id.toString(), doc.name]));
+                        _id: {
+                            $in: subjectObjectIds.map((id) => new mongoose_1.Types.ObjectId(id)),
+                        },
+                    }).select("name");
+                    const subjectMap = new Map(subjectDocs.map((doc) => [doc._id.toString(), doc.name]));
                     subjects = subjects.map((subject) => {
-                        if (typeof subject === 'string' && /^[0-9a-fA-F]{24}$/.test(subject)) {
+                        if (typeof subject === "string" &&
+                            /^[0-9a-fA-F]{24}$/.test(subject)) {
                             return subjectMap.get(subject) || subject;
                         }
                         return subject;
                     });
                 }
                 catch (error) {
-                    console.warn('Failed to convert subject ObjectIds to names:', error);
+                    console.warn("Failed to convert subject ObjectIds to names:", error);
                 }
             }
         }
@@ -758,22 +768,25 @@ class TeacherService {
             updatedAt: teacher.updatedAt,
             user: teacher.userId || teacher.user
                 ? {
-                    id: (teacher.userId?._id || teacher.user?._id || teacher.userId?.id || teacher.user?.id)?.toString(),
+                    id: (teacher.userId?._id ||
+                        teacher.user?._id ||
+                        teacher.userId?.id ||
+                        teacher.user?.id)?.toString(),
                     username: teacher.userId?.username || teacher.user?.username,
                     firstName: teacher.userId?.firstName || teacher.user?.firstName,
                     lastName: teacher.userId?.lastName || teacher.user?.lastName,
-                    fullName: `${teacher.userId?.firstName || teacher.user?.firstName || ''} ${teacher.userId?.lastName || teacher.user?.lastName || ''}`.trim() || 'Unknown User',
+                    fullName: `${teacher.userId?.firstName || teacher.user?.firstName || ""} ${teacher.userId?.lastName || teacher.user?.lastName || ""}`.trim() || "Unknown User",
                     email: teacher.userId?.email || teacher.user?.email,
                     phone: teacher.userId?.phone || teacher.user?.phone,
                 }
                 : {
-                    id: '',
-                    username: 'unknown',
-                    firstName: 'Unknown',
-                    lastName: 'User',
-                    fullName: 'Unknown User',
-                    email: '',
-                    phone: '',
+                    id: "",
+                    username: "unknown",
+                    firstName: "Unknown",
+                    lastName: "User",
+                    fullName: "Unknown User",
+                    email: "",
+                    phone: "",
                 },
             school: teacher.schoolId?.name
                 ? {
@@ -795,8 +808,8 @@ class TeacherService {
     async getTeacherDashboard(userId) {
         try {
             const teacher = await teacher_model_1.Teacher.findOne({ userId })
-                .populate('schoolId', 'name')
-                .populate('userId', 'firstName lastName username');
+                .populate("schoolId", "name")
+                .populate("userId", "firstName lastName username");
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
@@ -808,29 +821,32 @@ class TeacherService {
                 schoolId: teacher.schoolId,
                 grade: { $in: teacher.grades },
                 section: { $in: teacher.sections },
-                isActive: true
+                isActive: true,
             });
             const now = new Date();
             const pendingHomework = await homework_model_1.Homework.countDocuments({
                 teacherId: teacher._id,
                 dueDate: { $gte: now },
-                isPublished: true
+                isPublished: true,
             });
             const schedules = await schedule_model_1.Schedule.find({
-                'periods.teacherId': teacher._id,
-                isActive: true
+                "periods.teacherId": teacher._id,
+                isActive: true,
             });
             let todayClasses = 0;
-            const todayDayOfWeek = today.toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
+            const todayDayOfWeek = today
+                .toLocaleString("en-US", { weekday: "long" })
+                .toLowerCase();
             schedules.forEach((schedule) => {
-                if (schedule.dayOfWeek && schedule.dayOfWeek.toLowerCase() === todayDayOfWeek) {
+                if (schedule.dayOfWeek &&
+                    schedule.dayOfWeek.toLowerCase() === todayDayOfWeek) {
                     todayClasses += schedule.periods.filter((p) => String(p.teacherId) === String(teacher._id)).length;
                 }
             });
             const dashboardData = {
                 teacher: {
                     id: teacher._id,
-                    name: `${teacher.userId?.firstName || ''} ${teacher.userId?.lastName || ''}`.trim(),
+                    name: `${teacher.userId?.firstName || ""} ${teacher.userId?.lastName || ""}`.trim(),
                     subjects: teacher.subjects,
                     grades: teacher.grades,
                     sections: teacher.sections,
@@ -852,8 +868,7 @@ class TeacherService {
     }
     async getTeacherSchedule(userId) {
         try {
-            const teacher = await teacher_model_1.Teacher.findOne({ userId })
-                .populate('schoolId', 'name');
+            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate("schoolId", "name");
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
@@ -865,14 +880,14 @@ class TeacherService {
                 thursday: [],
                 friday: [],
                 saturday: [],
-                sunday: []
+                sunday: [],
             };
             let totalPeriodsPerWeek = 0;
             const subjectsCount = new Set();
             const classesCount = new Set();
-            schedules.forEach(schedule => {
+            schedules.forEach((schedule) => {
                 const teacherPeriods = schedule.getPeriodsForTeacher(teacher._id.toString());
-                teacherPeriods.forEach(period => {
+                teacherPeriods.forEach((period) => {
                     const scheduleEntry = {
                         scheduleId: schedule._id,
                         grade: schedule.grade,
@@ -883,12 +898,12 @@ class TeacherService {
                         endTime: period.endTime,
                         subject: {
                             id: period.subjectId?._id || period.subjectId,
-                            name: period.subjectId?.name || 'Unknown Subject',
-                            code: period.subjectId?.code || 'N/A'
+                            name: period.subjectId?.name || "Unknown Subject",
+                            code: period.subjectId?.code || "N/A",
                         },
                         roomNumber: period.roomNumber,
                         venue: period.roomNumber,
-                        duration: this.calculateDuration(period.startTime, period.endTime)
+                        duration: this.calculateDuration(period.startTime, period.endTime),
                     };
                     weeklySchedule[schedule.dayOfWeek].push(scheduleEntry);
                     totalPeriodsPerWeek++;
@@ -896,7 +911,7 @@ class TeacherService {
                     classesCount.add(`${schedule.grade}-${schedule.section}`);
                 });
             });
-            Object.keys(weeklySchedule).forEach(day => {
+            Object.keys(weeklySchedule).forEach((day) => {
                 weeklySchedule[day].sort((a, b) => {
                     if (a.startTime < b.startTime)
                         return -1;
@@ -906,28 +921,43 @@ class TeacherService {
                 });
             });
             const today = new Date();
-            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const dayNames = [
+                "sunday",
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday",
+                "saturday",
+            ];
             const todayName = dayNames[today.getDay()];
             const todaySchedule = weeklySchedule[todayName] || [];
             const currentTime = new Date();
-            const currentTimeString = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`;
-            const currentPeriod = todaySchedule.find(period => {
-                return currentTimeString >= period.startTime && currentTimeString <= period.endTime;
+            const currentTimeString = `${currentTime
+                .getHours()
+                .toString()
+                .padStart(2, "0")}:${currentTime
+                .getMinutes()
+                .toString()
+                .padStart(2, "0")}`;
+            const currentPeriod = todaySchedule.find((period) => {
+                return (currentTimeString >= period.startTime &&
+                    currentTimeString <= period.endTime);
             });
-            const nextPeriod = todaySchedule.find(period => {
+            const nextPeriod = todaySchedule.find((period) => {
                 return currentTimeString < period.startTime;
             });
             return {
                 teacher: {
                     id: teacher._id,
                     teacherId: teacher.teacherId,
-                    name: `${teacher.userId?.firstName || ''} ${teacher.userId?.lastName || ''}`.trim(),
+                    name: `${teacher.userId?.firstName || ""} ${teacher.userId?.lastName || ""}`.trim(),
                     subjects: teacher.subjects,
                     grades: teacher.grades,
                     sections: teacher.sections,
                     designation: teacher.designation,
                     isClassTeacher: teacher.isClassTeacher,
-                    classTeacherFor: teacher.classTeacherFor
+                    classTeacherFor: teacher.classTeacherFor,
                 },
                 weeklySchedule,
                 todaySchedule,
@@ -937,9 +967,9 @@ class TeacherService {
                     totalPeriodsPerWeek,
                     uniqueSubjects: subjectsCount.size,
                     uniqueClasses: classesCount.size,
-                    averagePeriodsPerDay: Math.round(totalPeriodsPerWeek / 6 * 10) / 10,
-                    busyDays: Object.keys(weeklySchedule).filter(day => weeklySchedule[day].length > 0).length
-                }
+                    averagePeriodsPerDay: Math.round((totalPeriodsPerWeek / 6) * 10) / 10,
+                    busyDays: Object.keys(weeklySchedule).filter((day) => weeklySchedule[day].length > 0).length,
+                },
             };
         }
         catch (error) {
@@ -949,22 +979,21 @@ class TeacherService {
         }
     }
     calculateDuration(startTime, endTime) {
-        const [startHour, startMin] = startTime.split(':').map(Number);
-        const [endHour, endMin] = endTime.split(':').map(Number);
+        const [startHour, startMin] = startTime.split(":").map(Number);
+        const [endHour, endMin] = endTime.split(":").map(Number);
         const startMinutes = startHour * 60 + startMin;
         const endMinutes = endHour * 60 + endMin;
         return endMinutes - startMinutes;
     }
     async getTeacherClasses(userId) {
         try {
-            const teacher = await teacher_model_1.Teacher.findOne({ userId })
-                .populate('schoolId', 'name');
+            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate("schoolId", "name");
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
             const schedules = await schedule_model_1.Schedule.findByTeacher(teacher._id.toString());
             const classMap = new Map();
-            schedules.forEach(schedule => {
+            schedules.forEach((schedule) => {
                 const teacherPeriods = schedule.getPeriodsForTeacher(teacher._id.toString());
                 if (teacherPeriods.length > 0) {
                     const classKey = `${schedule.grade}-${schedule.section}`;
@@ -976,14 +1005,14 @@ class TeacherService {
                             totalPeriods: 0,
                             daysScheduled: new Set(),
                             studentsCount: 0,
-                            classId: schedule.classId
+                            classId: schedule.classId,
                         });
                     }
                     const classData = classMap.get(classKey);
-                    teacherPeriods.forEach(period => {
+                    teacherPeriods.forEach((period) => {
                         if (period.subjectId) {
                             const subjectName = period.subjectId?.name ||
-                                teacher.subjects.find(s => s === period.subjectId?.toString()) ||
+                                teacher.subjects.find((s) => s === period.subjectId?.toString()) ||
                                 period.subjectId.toString();
                             classData.subjects.add(subjectName);
                             classData.totalPeriods++;
@@ -992,7 +1021,7 @@ class TeacherService {
                     classData.daysScheduled.add(schedule.dayOfWeek);
                 }
             });
-            const classes = Array.from(classMap.values()).map(classData => ({
+            const classes = Array.from(classMap.values()).map((classData) => ({
                 grade: classData.grade,
                 section: classData.section,
                 className: `Grade ${classData.grade} - Section ${classData.section}`,
@@ -1000,7 +1029,7 @@ class TeacherService {
                 totalPeriods: classData.totalPeriods,
                 daysScheduled: Array.from(classData.daysScheduled),
                 studentsCount: classData.studentsCount,
-                classId: classData.classId
+                classId: classData.classId,
             }));
             classes.sort((a, b) => {
                 if (a.grade !== b.grade) {
@@ -1012,20 +1041,21 @@ class TeacherService {
                 teacher: {
                     id: teacher._id,
                     teacherId: teacher.teacherId,
-                    name: `${teacher.userId?.firstName || ''} ${teacher.userId?.lastName || ''}`.trim(),
+                    name: `${teacher.userId?.firstName || ""} ${teacher.userId?.lastName || ""}`.trim(),
                     subjects: teacher.subjects,
                     grades: teacher.grades,
                     sections: teacher.sections,
                     designation: teacher.designation,
                     isClassTeacher: teacher.isClassTeacher,
-                    classTeacherFor: teacher.classTeacherFor
+                    classTeacherFor: teacher.classTeacherFor,
                 },
                 classes,
                 summary: {
                     totalClasses: classes.length,
-                    totalSubjects: [...new Set(classes.flatMap(c => c.subjects))].length,
-                    totalPeriods: classes.reduce((sum, c) => sum + c.totalPeriods, 0)
-                }
+                    totalSubjects: [...new Set(classes.flatMap((c) => c.subjects))]
+                        .length,
+                    totalPeriods: classes.reduce((sum, c) => sum + c.totalPeriods, 0),
+                },
             };
         }
         catch (error) {
@@ -1036,31 +1066,33 @@ class TeacherService {
     }
     async getCurrentPeriods(userId) {
         try {
-            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate('schoolId userId');
+            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate("schoolId userId");
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
             const now = new Date();
-            const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+            const currentDay = now
+                .toLocaleDateString("en-US", { weekday: "long" })
+                .toLowerCase();
             const currentTime = now.toTimeString().substring(0, 5);
             const schoolTimezone = teacher.schoolId?.settings?.timezone ||
                 config_1.default.school_timezone ||
-                'UTC';
+                "UTC";
             const { dateKey } = (0, day_attendance_model_1.normaliseDateKey)(now, schoolTimezone);
             const schoolId = teacher.schoolId?._id || teacher.schoolId;
             const schedules = await schedule_model_1.Schedule.find({
                 schoolId: teacher.schoolId,
                 dayOfWeek: currentDay,
                 isActive: true,
-                'periods.teacherId': teacher._id,
+                "periods.teacherId": teacher._id,
             }).populate([
                 {
-                    path: 'periods.subjectId',
-                    select: 'name code',
+                    path: "periods.subjectId",
+                    select: "name code",
                 },
                 {
-                    path: 'classId',
-                    select: 'grade section name',
+                    path: "classId",
+                    select: "grade section name",
                 },
             ]);
             const availablePeriods = [];
@@ -1077,9 +1109,11 @@ class TeacherService {
                 });
                 const isHoliday = holidayEvents.length > 0;
                 for (const period of schedule.periods) {
-                    if (period.teacherId?.toString() === teacher._id.toString() && !period.isBreak) {
+                    if (period.teacherId?.toString() === teacher._id.toString() &&
+                        !period.isBreak) {
                         const status = this.getPeriodTimeStatus(period.startTime, period.endTime, now);
-                        const canMark = !isHoliday && this.canMarkAttendanceNow(period.startTime, period.endTime, now);
+                        const canMark = !isHoliday &&
+                            this.canMarkAttendanceNow(period.startTime, period.endTime, now);
                         const periodData = {
                             scheduleId: schedule._id,
                             classId: schedule.classId._id || schedule.classId,
@@ -1087,15 +1121,17 @@ class TeacherService {
                             section: schedule.section,
                             className: `Grade ${schedule.grade} - Section ${schedule.section}`,
                             periodNumber: period.periodNumber,
-                            subject: period.subjectId ? {
-                                id: period.subjectId._id || period.subjectId,
-                                name: period.subjectId.name || 'Unknown Subject',
-                                code: period.subjectId.code || 'UNK',
-                            } : {
-                                id: '',
-                                name: 'No Subject',
-                                code: 'N/A',
-                            },
+                            subject: period.subjectId
+                                ? {
+                                    id: period.subjectId._id || period.subjectId,
+                                    name: period.subjectId.name || "Unknown Subject",
+                                    code: period.subjectId.code || "UNK",
+                                }
+                                : {
+                                    id: "",
+                                    name: "No Subject",
+                                    code: "N/A",
+                                },
                             startTime: period.startTime,
                             endTime: period.endTime,
                             roomNumber: period.roomNumber,
@@ -1103,7 +1139,7 @@ class TeacherService {
                             timeStatus: status,
                             isHoliday,
                             holidayEvents: holidayEvents.map((event) => ({
-                                id: event._id?.toString?.() ?? '',
+                                id: event._id?.toString?.() ?? "",
                                 title: event.title,
                                 date: event.date,
                             })),
@@ -1114,7 +1150,7 @@ class TeacherService {
                         if (canMark) {
                             currentPeriods.push(periodData);
                         }
-                        else if (status === 'upcoming') {
+                        else if (status === "upcoming") {
                             upcomingPeriods.push(periodData);
                         }
                         else {
@@ -1132,9 +1168,9 @@ class TeacherService {
                 allPeriods: availablePeriods,
                 holidayPeriods,
                 holidayNotice: holidayTitles.length
-                    ? `Attendance is disabled today due to ${holidayTitles.join(', ')}`
+                    ? `Attendance is disabled today due to ${holidayTitles.join(", ")}`
                     : holidayPeriods.length
-                        ? 'Attendance is disabled today due to a school holiday.'
+                        ? "Attendance is disabled today due to a school holiday."
                         : null,
                 teacherInfo: {
                     id: teacher._id,
@@ -1155,9 +1191,9 @@ class TeacherService {
             return false;
         }
         const currentTime = now.toTimeString().substring(0, 5);
-        const [startHour, startMin] = startTime.split(':').map(Number);
-        const [endHour, endMin] = endTime.split(':').map(Number);
-        const [currentHour, currentMin] = currentTime.split(':').map(Number);
+        const [startHour, startMin] = startTime.split(":").map(Number);
+        const [endHour, endMin] = endTime.split(":").map(Number);
+        const [currentHour, currentMin] = currentTime.split(":").map(Number);
         const startMinutes = startHour * 60 + startMin - 5;
         const endMinutes = endHour * 60 + endMin;
         const currentMinutes = currentHour * 60 + currentMin;
@@ -1165,29 +1201,31 @@ class TeacherService {
     }
     getPeriodTimeStatus(startTime, endTime, now) {
         if (!startTime || !endTime) {
-            return 'upcoming';
+            return "upcoming";
         }
         const currentTime = now.toTimeString().substring(0, 5);
-        const [startHour, startMin] = startTime.split(':').map(Number);
-        const [endHour, endMin] = endTime.split(':').map(Number);
-        const [currentHour, currentMin] = currentTime.split(':').map(Number);
+        const [startHour, startMin] = startTime.split(":").map(Number);
+        const [endHour, endMin] = endTime.split(":").map(Number);
+        const [currentHour, currentMin] = currentTime.split(":").map(Number);
         const startMinutes = startHour * 60 + startMin;
         const endMinutes = endHour * 60 + endMin;
         const currentMinutes = currentHour * 60 + currentMin;
         if (currentMinutes < startMinutes)
-            return 'upcoming';
+            return "upcoming";
         if (currentMinutes <= endMinutes)
-            return 'current';
-        return 'past';
+            return "current";
+        return "past";
     }
     async markAttendance(userId, attendanceData) {
         try {
-            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate('schoolId userId');
+            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate("schoolId userId");
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
             const now = new Date();
-            const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+            const currentDay = now
+                .toLocaleDateString("en-US", { weekday: "long" })
+                .toLowerCase();
             const attendanceDate = new Date(attendanceData.date);
             const schedule = await schedule_model_1.Schedule.findOne({
                 schoolId: teacher.schoolId,
@@ -1195,38 +1233,40 @@ class TeacherService {
                 section: attendanceData.section,
                 dayOfWeek: currentDay,
                 isActive: true,
-                'periods': {
+                periods: {
                     $elemMatch: {
                         periodNumber: attendanceData.period,
                         teacherId: teacher._id,
                         subjectId: attendanceData.subjectId,
-                    }
-                }
-            }).populate('periods.subjectId');
+                    },
+                },
+            }).populate("periods.subjectId");
             if (!schedule) {
                 throw new AppError_1.AppError(http_status_1.default.FORBIDDEN, "You are not authorized to mark attendance for this class/subject/period");
             }
-            const period = schedule.periods.find(p => {
+            const period = schedule.periods.find((p) => {
                 let subjectId;
-                if (p.subjectId && typeof p.subjectId === 'object' && '_id' in p.subjectId) {
+                if (p.subjectId &&
+                    typeof p.subjectId === "object" &&
+                    "_id" in p.subjectId) {
                     subjectId = p.subjectId._id.toString();
                 }
                 else if (p.subjectId) {
                     subjectId = String(p.subjectId);
                 }
                 else {
-                    subjectId = '';
+                    subjectId = "";
                 }
-                return p.periodNumber === attendanceData.period &&
+                return (p.periodNumber === attendanceData.period &&
                     p.teacherId?.toString() === teacher._id.toString() &&
-                    subjectId === attendanceData.subjectId;
+                    subjectId === attendanceData.subjectId);
             });
             if (!period) {
                 throw new AppError_1.AppError(http_status_1.default.FORBIDDEN, "Period not found in your schedule");
             }
             if (!this.canMarkAttendanceNow(period.startTime, period.endTime, now)) {
                 const timeStatus = this.getPeriodTimeStatus(period.startTime, period.endTime, now);
-                if (timeStatus === 'past') {
+                if (timeStatus === "past") {
                     throw new AppError_1.AppError(http_status_1.default.BAD_REQUEST, `Attendance marking window has closed. Period ended at ${period.endTime}`);
                 }
                 else {
@@ -1235,7 +1275,7 @@ class TeacherService {
             }
             const savedAttendance = await attendance_model_1.Attendance.markAttendance(teacher._id.toString(), attendanceData.classId, attendanceData.subjectId, attendanceDate, attendanceData.period, attendanceData.students);
             const stats = savedAttendance.getAttendanceStats();
-            const absentStudents = savedAttendance.students.filter(s => s.status === 'absent');
+            const absentStudents = savedAttendance.students.filter((s) => s.status === "absent");
             if (absentStudents.length > 0) {
                 try {
                     for (const absentStudent of absentStudents) {
@@ -1250,7 +1290,7 @@ class TeacherService {
                     }
                 }
                 catch (notificationError) {
-                    console.error('Failed to send notifications:', notificationError);
+                    console.error("Failed to send notifications:", notificationError);
                 }
             }
             return {
@@ -1276,16 +1316,16 @@ class TeacherService {
             if (error instanceof AppError_1.AppError)
                 throw error;
             if (error instanceof Error) {
-                const message = error.message || 'Failed to mark attendance';
-                if (message.includes('locked')) {
+                const message = error.message || "Failed to mark attendance";
+                if (message.includes("locked")) {
                     throw new AppError_1.AppError(http_status_1.default.FORBIDDEN, message);
                 }
-                if (message.includes('Cannot mark attendance')) {
+                if (message.includes("Cannot mark attendance")) {
                     throw new AppError_1.AppError(http_status_1.default.BAD_REQUEST, message);
                 }
                 throw new AppError_1.AppError(http_status_1.default.INTERNAL_SERVER_ERROR, `Failed to mark attendance: ${message}`);
             }
-            throw new AppError_1.AppError(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to mark attendance due to an unexpected error');
+            throw new AppError_1.AppError(http_status_1.default.INTERNAL_SERVER_ERROR, "Failed to mark attendance due to an unexpected error");
         }
     }
     async getStudentsForAttendance(userId, classId, subjectId, period) {
@@ -1296,33 +1336,35 @@ class TeacherService {
             if (!subjectId || !mongoose_1.Types.ObjectId.isValid(subjectId)) {
                 throw new AppError_1.AppError(http_status_1.default.BAD_REQUEST, "Invalid subjectId provided");
             }
-            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate('schoolId userId');
+            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate("schoolId userId");
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
             const now = new Date();
-            const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+            const currentDay = now
+                .toLocaleDateString("en-US", { weekday: "long" })
+                .toLowerCase();
             const schedule = await schedule_model_1.Schedule.findOne({
                 schoolId: teacher.schoolId,
                 classId: new mongoose_1.Types.ObjectId(classId),
                 dayOfWeek: currentDay,
                 isActive: true,
-                'periods': {
+                periods: {
                     $elemMatch: {
                         periodNumber: period,
                         teacherId: teacher._id,
                         subjectId: new mongoose_1.Types.ObjectId(subjectId),
-                    }
-                }
+                    },
+                },
             }).populate([
                 {
-                    path: 'periods.subjectId',
-                    select: 'name code',
+                    path: "periods.subjectId",
+                    select: "name code",
                 },
                 {
-                    path: 'classId',
-                    select: 'grade section name',
-                }
+                    path: "classId",
+                    select: "grade section name",
+                },
             ]);
             if (!schedule) {
                 throw new AppError_1.AppError(http_status_1.default.FORBIDDEN, "You are not authorized to mark attendance for this class/subject/period");
@@ -1333,13 +1375,13 @@ class TeacherService {
                 section: schedule.section,
                 isActive: true,
             })
-                .populate('userId', 'firstName lastName')
+                .populate("userId", "firstName lastName")
                 .sort({ rollNumber: 1 });
             const schoolTimezone = teacher.schoolId?.settings?.timezone ||
                 config_1.default.school_timezone ||
-                'UTC';
+                "UTC";
             const { date: attendanceDate, dateKey } = (0, day_attendance_model_1.normaliseDateKey)(now, schoolTimezone);
-            const dateString = now.toISOString().split('T')[0];
+            const dateString = now.toISOString().split("T")[0];
             const schoolId = teacher.schoolId?._id || teacher.schoolId;
             const holidayEvents = await (0, holiday_utils_1.findHolidayEventsForClass)({
                 schoolId,
@@ -1352,7 +1394,7 @@ class TeacherService {
                 const titles = holidayEvents
                     .map((event) => event.title)
                     .filter((title) => Boolean(title));
-                const label = titles.length ? ` (${titles.join(', ')})` : '';
+                const label = titles.length ? ` (${titles.join(", ")})` : "";
                 throw new AppError_1.AppError(http_status_1.default.FORBIDDEN, `Attendance cannot be taken on ${dateKey}; the school calendar marks this date as a holiday${label}.`);
             }
             const existingAttendance = await attendance_model_1.Attendance.findOne({
@@ -1364,7 +1406,7 @@ class TeacherService {
             });
             const attendanceMap = new Map();
             if (existingAttendance) {
-                existingAttendance.students.forEach(student => {
+                existingAttendance.students.forEach((student) => {
                     attendanceMap.set(student.studentId.toString(), student.status);
                 });
             }
@@ -1373,12 +1415,12 @@ class TeacherService {
                 schoolId: teacher.schoolId,
                 dateKey,
                 studentId: { $in: studentObjectIds },
-            }).select('studentId autoStatus teacherStatus finalStatus finalSource teacherOverride autoMarkedAt teacherMarkedAt finalized');
+            }).select("studentId autoStatus teacherStatus finalStatus finalSource teacherOverride autoMarkedAt teacherMarkedAt finalized");
             const dayAttendanceMap = new Map();
             dayAttendanceDocs.forEach((doc) => {
                 dayAttendanceMap.set(doc.studentId.toString(), doc);
             });
-            const studentsWithAttendance = students.map(student => ({
+            const studentsWithAttendance = students.map((student) => ({
                 id: student._id.toString(),
                 studentId: student.studentId,
                 name: `${student.userId.firstName} ${student.userId.lastName}`,
@@ -1388,11 +1430,12 @@ class TeacherService {
                 autoStatus: dayAttendanceMap.get(student._id.toString())?.autoStatus || null,
                 finalStatus: dayAttendanceMap.get(student._id.toString())?.finalStatus || null,
                 finalSource: dayAttendanceMap.get(student._id.toString())?.finalSource || null,
-                teacherOverride: dayAttendanceMap.get(student._id.toString())?.teacherOverride || false,
+                teacherOverride: dayAttendanceMap.get(student._id.toString())?.teacherOverride ||
+                    false,
                 currentStatus: attendanceMap.get(student._id.toString()) || null,
                 hasPhoto: student.photos && student.photos.length > 0,
             }));
-            const periodInfo = schedule.periods.find(p => p.periodNumber === period &&
+            const periodInfo = schedule.periods.find((p) => p.periodNumber === period &&
                 p.teacherId?.toString() === teacher._id.toString() &&
                 p.subjectId?.toString() === subjectId);
             return {
@@ -1405,10 +1448,10 @@ class TeacherService {
                 subjectInfo: periodInfo?.subjectId,
                 periodInfo: {
                     number: period,
-                    startTime: periodInfo?.startTime || '00:00',
-                    endTime: periodInfo?.endTime || '00:00',
-                    canMarkAttendance: this.canMarkAttendanceNow(periodInfo?.startTime || '00:00', periodInfo?.endTime || '00:00', now),
-                    timeStatus: this.getPeriodTimeStatus(periodInfo?.startTime || '00:00', periodInfo?.endTime || '00:00', now),
+                    startTime: periodInfo?.startTime || "00:00",
+                    endTime: periodInfo?.endTime || "00:00",
+                    canMarkAttendance: this.canMarkAttendanceNow(periodInfo?.startTime || "00:00", periodInfo?.endTime || "00:00", now),
+                    timeStatus: this.getPeriodTimeStatus(periodInfo?.startTime || "00:00", periodInfo?.endTime || "00:00", now),
                 },
                 students: studentsWithAttendance,
                 attendanceAlreadyMarked: existingAttendance !== null,
@@ -1428,21 +1471,23 @@ class TeacherService {
     }
     async getMyStudentsForAttendance(userId) {
         try {
-            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate('schoolId userId');
+            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate("schoolId userId");
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
             const now = new Date();
-            const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+            const currentDay = now
+                .toLocaleDateString("en-US", { weekday: "long" })
+                .toLowerCase();
             const schedules = await schedule_model_1.Schedule.find({
                 schoolId: teacher.schoolId,
                 dayOfWeek: currentDay,
                 isActive: true,
-                'periods.teacherId': teacher._id,
-            }).populate('classId');
+                "periods.teacherId": teacher._id,
+            }).populate("classId");
             const schoolTimezone = teacher.schoolId?.settings?.timezone ||
                 config_1.default.school_timezone ||
-                'UTC';
+                "UTC";
             const { dateKey } = (0, day_attendance_model_1.normaliseDateKey)(now, schoolTimezone);
             const schoolId = teacher.schoolId?._id || teacher.schoolId;
             const classesWithStudents = [];
@@ -1460,7 +1505,7 @@ class TeacherService {
                     grade: schedule.grade,
                     section: schedule.section,
                     isActive: true,
-                }).populate('userId', 'firstName lastName profilePhoto');
+                }).populate("userId", "firstName lastName profilePhoto");
                 const classEntry = {
                     classId: schedule.classId._id,
                     grade: schedule.grade,
@@ -1468,11 +1513,11 @@ class TeacherService {
                     className: `Grade ${schedule.grade} - Section ${schedule.section}`,
                     isHoliday: holidayEvents.length > 0,
                     holidayEvents: holidayEvents.map((event) => ({
-                        id: event._id?.toString?.() ?? '',
+                        id: event._id?.toString?.() ?? "",
                         title: event.title,
                         date: event.date,
                     })),
-                    students: students.map(student => ({
+                    students: students.map((student) => ({
                         id: student._id,
                         studentId: student.studentId,
                         rollNumber: student.rollNumber,
@@ -1504,11 +1549,11 @@ class TeacherService {
                 classes: classesWithStudents,
                 holidayClasses,
                 holidayNotice: holidayTitles.length
-                    ? `Attendance is disabled today due to ${holidayTitles.join(', ')}`
+                    ? `Attendance is disabled today due to ${holidayTitles.join(", ")}`
                     : holidayClasses.length
-                        ? 'Attendance is disabled today due to a school holiday.'
+                        ? "Attendance is disabled today due to a school holiday."
                         : null,
-                date: now.toISOString().split('T')[0],
+                date: now.toISOString().split("T")[0],
             };
         }
         catch (error) {
@@ -1519,18 +1564,18 @@ class TeacherService {
     }
     async assignHomework(userId, homeworkData, attachments) {
         try {
-            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate('schoolId');
+            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate("schoolId");
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
             let attachmentUrls = [];
             if (attachments && attachments.length > 0) {
                 try {
-                    const { uploadToCloudinary } = await Promise.resolve().then(() => __importStar(require('../../utils/cloudinaryUtils')));
+                    const { uploadToCloudinary } = await Promise.resolve().then(() => __importStar(require("../../utils/cloudinaryUtils")));
                     for (const file of attachments) {
                         const uploadResult = await uploadToCloudinary(file.buffer, {
-                            folder: 'homework-attachments',
-                            resource_type: 'auto',
+                            folder: "homework-attachments",
+                            resource_type: "auto",
                             use_filename: true,
                             unique_filename: true,
                         });
@@ -1538,10 +1583,10 @@ class TeacherService {
                     }
                 }
                 catch (error) {
-                    throw new AppError_1.AppError(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to upload attachments');
+                    throw new AppError_1.AppError(http_status_1.default.INTERNAL_SERVER_ERROR, "Failed to upload attachments");
                 }
             }
-            const { Homework } = await Promise.resolve().then(() => __importStar(require('../homework/homework.model')));
+            const { Homework } = await Promise.resolve().then(() => __importStar(require("../homework/homework.model")));
             const homework = new Homework({
                 schoolId: teacher.schoolId,
                 teacherId: teacher._id,
@@ -1551,20 +1596,22 @@ class TeacherService {
                 title: homeworkData.title,
                 description: homeworkData.description,
                 instructions: homeworkData.instructions,
-                homeworkType: homeworkData.homeworkType || 'assignment',
-                priority: homeworkData.priority || 'medium',
+                homeworkType: homeworkData.homeworkType || "assignment",
+                priority: homeworkData.priority || "medium",
                 assignedDate: new Date(),
                 dueDate: new Date(homeworkData.dueDate),
                 estimatedDuration: parseInt(homeworkData.estimatedDuration) || 60,
                 totalMarks: parseInt(homeworkData.totalMarks) || 100,
                 passingMarks: parseInt(homeworkData.passingMarks) || 40,
                 attachments: attachmentUrls,
-                submissionType: homeworkData.submissionType || 'both',
+                submissionType: homeworkData.submissionType || "both",
                 allowLateSubmission: homeworkData.allowLateSubmission !== false,
                 latePenalty: parseInt(homeworkData.latePenalty) || 10,
                 maxLateDays: parseInt(homeworkData.maxLateDays) || 3,
                 isGroupWork: homeworkData.isGroupWork === true,
-                maxGroupSize: homeworkData.isGroupWork ? parseInt(homeworkData.maxGroupSize) || 4 : undefined,
+                maxGroupSize: homeworkData.isGroupWork
+                    ? parseInt(homeworkData.maxGroupSize) || 4
+                    : undefined,
                 rubric: homeworkData.rubric || [],
                 tags: homeworkData.tags || [],
                 isPublished: homeworkData.isPublished === true,
@@ -1572,15 +1619,15 @@ class TeacherService {
             await homework.save();
             const populatedHomework = await Homework.findById(homework._id)
                 .populate({
-                path: 'teacherId',
-                select: 'userId teacherId',
+                path: "teacherId",
+                select: "userId teacherId",
                 populate: {
-                    path: 'userId',
-                    select: 'firstName lastName'
-                }
+                    path: "userId",
+                    select: "firstName lastName",
+                },
             })
-                .populate('subjectId', 'name code')
-                .populate('schoolId', 'name');
+                .populate("subjectId", "name code")
+                .populate("schoolId", "name");
             if (homework.isPublished) {
                 try {
                     const students = await student_model_1.Student.find({
@@ -1589,25 +1636,26 @@ class TeacherService {
                         ...(homework.section ? { section: homework.section } : {}),
                         isActive: true,
                     });
-                    const studentIds = students.map(s => s._id.toString());
+                    const studentIds = students.map((s) => s._id.toString());
                     if (studentIds.length > 0) {
                         await notification_model_1.Notification.createHomeworkAlert({
                             studentIds: studentIds,
                             teacherId: teacher._id.toString(),
                             homeworkTitle: homework.title,
                             dueDate: homework.dueDate,
-                            subjectName: populatedHomework?.subjectId?.name || 'Unknown Subject',
+                            subjectName: populatedHomework?.subjectId?.name ||
+                                "Unknown Subject",
                         });
                     }
                 }
                 catch (notificationError) {
-                    console.error('Failed to send homework notifications:', notificationError);
+                    console.error("Failed to send homework notifications:", notificationError);
                 }
             }
             return {
                 id: homework._id,
                 ...populatedHomework?.toJSON(),
-                message: 'Homework assigned successfully'
+                message: "Homework assigned successfully",
             };
         }
         catch (error) {
@@ -1622,7 +1670,7 @@ class TeacherService {
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
-            const { Homework } = await Promise.resolve().then(() => __importStar(require('../homework/homework.model')));
+            const { Homework } = await Promise.resolve().then(() => __importStar(require("../homework/homework.model")));
             const query = { teacherId: teacher._id };
             if (filters?.grade) {
                 query.grade = parseInt(filters.grade);
@@ -1634,7 +1682,7 @@ class TeacherService {
                 query.subjectId = filters.subjectId;
             }
             if (filters?.isPublished !== undefined) {
-                query.isPublished = filters.isPublished === 'true';
+                query.isPublished = filters.isPublished === "true";
             }
             if (filters?.priority) {
                 query.priority = filters.priority;
@@ -1653,15 +1701,15 @@ class TeacherService {
             }
             const assignments = await Homework.find(query)
                 .populate({
-                path: 'teacherId',
-                select: 'userId teacherId',
+                path: "teacherId",
+                select: "userId teacherId",
                 populate: {
-                    path: 'userId',
-                    select: 'firstName lastName'
-                }
+                    path: "userId",
+                    select: "firstName lastName",
+                },
             })
-                .populate('subjectId', 'name code')
-                .populate('schoolId', 'name')
+                .populate("subjectId", "name code")
+                .populate("schoolId", "name")
                 .sort({ updatedAt: -1, createdAt: -1 })
                 .lean();
             const assignmentsWithStats = await Promise.all(assignments.map(async (assignment) => {
@@ -1679,31 +1727,36 @@ class TeacherService {
             }));
             const summary = {
                 total: assignments.length,
-                published: assignments.filter(a => a.isPublished).length,
-                draft: assignments.filter(a => !a.isPublished).length,
-                overdue: assignmentsWithStats.filter(a => a.isOverdue).length,
-                dueToday: assignmentsWithStats.filter(a => a.isDueToday).length,
-                upcoming: assignmentsWithStats.filter(a => a.daysUntilDue > 0 && a.daysUntilDue <= 7).length,
+                published: assignments.filter((a) => a.isPublished).length,
+                draft: assignments.filter((a) => !a.isPublished).length,
+                overdue: assignmentsWithStats.filter((a) => a.isOverdue).length,
+                dueToday: assignmentsWithStats.filter((a) => a.isDueToday).length,
+                upcoming: assignmentsWithStats.filter((a) => a.daysUntilDue > 0 && a.daysUntilDue <= 7).length,
                 byPriority: {
-                    urgent: assignments.filter(a => a.priority === 'urgent').length,
-                    high: assignments.filter(a => a.priority === 'high').length,
-                    medium: assignments.filter(a => a.priority === 'medium').length,
-                    low: assignments.filter(a => a.priority === 'low').length,
+                    urgent: assignments.filter((a) => a.priority === "urgent").length,
+                    high: assignments.filter((a) => a.priority === "high").length,
+                    medium: assignments.filter((a) => a.priority === "medium").length,
+                    low: assignments.filter((a) => a.priority === "low").length,
                 },
                 byType: {
-                    assignment: assignments.filter(a => a.homeworkType === 'assignment').length,
-                    project: assignments.filter(a => a.homeworkType === 'project').length,
-                    reading: assignments.filter(a => a.homeworkType === 'reading').length,
-                    practice: assignments.filter(a => a.homeworkType === 'practice').length,
-                    research: assignments.filter(a => a.homeworkType === 'research').length,
-                    presentation: assignments.filter(a => a.homeworkType === 'presentation').length,
-                    other: assignments.filter(a => a.homeworkType === 'other').length,
-                }
+                    assignment: assignments.filter((a) => a.homeworkType === "assignment")
+                        .length,
+                    project: assignments.filter((a) => a.homeworkType === "project")
+                        .length,
+                    reading: assignments.filter((a) => a.homeworkType === "reading")
+                        .length,
+                    practice: assignments.filter((a) => a.homeworkType === "practice")
+                        .length,
+                    research: assignments.filter((a) => a.homeworkType === "research")
+                        .length,
+                    presentation: assignments.filter((a) => a.homeworkType === "presentation").length,
+                    other: assignments.filter((a) => a.homeworkType === "other").length,
+                },
             };
             return {
                 teacherId: teacher._id,
                 assignments: assignmentsWithStats,
-                summary
+                summary,
             };
         }
         catch (error) {
@@ -1714,39 +1767,51 @@ class TeacherService {
     }
     async issueWarning(userId, warningData) {
         try {
-            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate('schoolId');
+            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate("schoolId");
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
-            const { DisciplinaryAction } = await Promise.resolve().then(() => __importStar(require('../disciplinary/disciplinary.model')));
+            const { DisciplinaryAction } = await Promise.resolve().then(() => __importStar(require("../disciplinary/disciplinary.model")));
             const actions = [];
             for (const studentId of warningData.studentIds) {
                 const student = await student_model_1.Student.findById(studentId);
-                if (!student || student.schoolId.toString() !== teacher.schoolId._id.toString()) {
+                if (!student ||
+                    student.schoolId.toString() !== teacher.schoolId._id.toString()) {
                     throw new AppError_1.AppError(http_status_1.default.FORBIDDEN, `You don't have permission for student ${studentId}`);
                 }
                 const action = await DisciplinaryAction.create({
                     schoolId: teacher.schoolId._id,
                     studentId,
                     teacherId: teacher._id,
-                    actionType: warningData.actionType || 'warning',
+                    actionType: warningData.actionType || "warning",
                     severity: warningData.severity,
                     category: warningData.category,
                     title: warningData.title || warningData.reason,
                     description: warningData.description || warningData.reason,
                     reason: warningData.reason,
-                    incidentDate: warningData.incidentDate ? new Date(warningData.incidentDate) : new Date(),
+                    incidentDate: warningData.incidentDate
+                        ? new Date(warningData.incidentDate)
+                        : new Date(),
                     actionTaken: warningData.actionTaken,
                     followUpRequired: warningData.followUpRequired || false,
-                    followUpDate: warningData.followUpDate ? new Date(warningData.followUpDate) : undefined,
+                    followUpDate: warningData.followUpDate
+                        ? new Date(warningData.followUpDate)
+                        : undefined,
                     isAppealable: warningData.isAppealable !== false,
-                    appealDeadline: warningData.appealDeadline ? new Date(warningData.appealDeadline) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                    appealDeadline: warningData.appealDeadline
+                        ? new Date(warningData.appealDeadline)
+                        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
                     witnesses: warningData.witnesses || [],
                     evidenceAttachments: warningData.evidenceAttachments || [],
-                    points: warningData.points || (warningData.severity === 'high' ? 10 : warningData.severity === 'medium' ? 5 : 2),
+                    points: warningData.points ||
+                        (warningData.severity === "high"
+                            ? 10
+                            : warningData.severity === "medium"
+                                ? 5
+                                : 2),
                     warrantLevel: warningData.warrantLevel,
-                    isRedWarrant: warningData.actionType === 'red_warrant',
-                    academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
+                    isRedWarrant: warningData.actionType === "red_warrant",
+                    academicYear: new Date().getFullYear() + "-" + (new Date().getFullYear() + 1),
                     createdBy: teacher.userId,
                 });
                 if (warningData.notifyParents) {
@@ -1754,28 +1819,28 @@ class TeacherService {
                         await action.notifyParents();
                     }
                     catch (error) {
-                        console.error('Failed to notify parents:', error);
+                        console.error("Failed to notify parents:", error);
                     }
                 }
                 try {
                     await action.notifyStudent();
                 }
                 catch (error) {
-                    console.error('Failed to notify student:', error);
+                    console.error("Failed to notify student:", error);
                 }
                 actions.push(action);
             }
             return {
                 success: true,
                 actionsCreated: actions.length,
-                actions: actions.map(action => ({
+                actions: actions.map((action) => ({
                     id: action._id?.toString() || action.id,
                     studentId: action.studentId,
                     actionType: action.actionType,
                     severity: action.severity,
                     title: action.title,
                     isRedWarrant: action.isRedWarrant,
-                    issuedAt: action.issuedDate
+                    issuedAt: action.issuedDate,
                 })),
                 teacherId: teacher._id,
             };
@@ -1788,31 +1853,34 @@ class TeacherService {
     }
     async issuePunishment(userId, punishmentData) {
         try {
-            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate('schoolId');
+            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate("schoolId");
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
-            const { DisciplinaryAction } = await Promise.resolve().then(() => __importStar(require('../disciplinary/disciplinary.model')));
+            const { DisciplinaryAction } = await Promise.resolve().then(() => __importStar(require("../disciplinary/disciplinary.model")));
             const actions = [];
             for (const studentId of punishmentData.studentIds) {
                 const student = await student_model_1.Student.findById(studentId);
-                if (!student || student.schoolId.toString() !== teacher.schoolId._id.toString()) {
+                if (!student ||
+                    student.schoolId.toString() !== teacher.schoolId._id.toString()) {
                     throw new AppError_1.AppError(http_status_1.default.FORBIDDEN, `You don't have permission for student ${studentId}`);
                 }
-                if (!punishmentData.reason || punishmentData.reason.trim() === '') {
+                if (!punishmentData.reason || punishmentData.reason.trim() === "") {
                     throw new AppError_1.AppError(http_status_1.default.BAD_REQUEST, "Reason is required for disciplinary action");
                 }
                 const action = await DisciplinaryAction.create({
                     schoolId: teacher.schoolId._id,
                     studentId,
                     teacherId: teacher._id,
-                    actionType: 'red_warrant',
-                    severity: punishmentData.severity || 'high',
-                    category: punishmentData.category || 'discipline',
+                    actionType: "red_warrant",
+                    severity: punishmentData.severity || "high",
+                    category: punishmentData.category || "discipline",
                     title: `RED WARRANT: ${punishmentData.title}`,
                     description: punishmentData.description,
                     reason: punishmentData.reason.trim(),
-                    incidentDate: punishmentData.incidentDate ? new Date(punishmentData.incidentDate) : new Date(),
+                    incidentDate: punishmentData.incidentDate
+                        ? new Date(punishmentData.incidentDate)
+                        : new Date(),
                     actionTaken: punishmentData.actionTaken,
                     followUpRequired: true,
                     followUpDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
@@ -1820,10 +1888,10 @@ class TeacherService {
                     appealDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
                     witnesses: punishmentData.witnesses || [],
                     evidenceAttachments: punishmentData.evidenceAttachments || [],
-                    points: punishmentData.severity === 'critical' ? 50 : 30,
-                    warrantLevel: 'red',
+                    points: punishmentData.severity === "critical" ? 50 : 30,
+                    warrantLevel: "red",
                     isRedWarrant: true,
-                    academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
+                    academicYear: new Date().getFullYear() + "-" + (new Date().getFullYear() + 1),
                     createdBy: teacher.userId,
                 });
                 try {
@@ -1831,20 +1899,22 @@ class TeacherService {
                     await action.notifyStudent();
                 }
                 catch (error) {
-                    console.error('Failed to send notifications:', error);
+                    console.error("Failed to send notifications:", error);
                 }
                 actions.push(action);
             }
             return {
                 success: true,
                 redWarrantsIssued: actions.length,
-                actions: actions.map(action => ({
+                actions: actions.map((action) => ({
                     id: action._id?.toString() || action.id,
                     studentId: action.studentId,
-                    warrantNumber: `RW-${Date.now()}-${(action._id?.toString() || '').slice(-6).toUpperCase()}`,
+                    warrantNumber: `RW-${Date.now()}-${(action._id?.toString() || "")
+                        .slice(-6)
+                        .toUpperCase()}`,
                     severity: action.severity,
                     title: action.title,
-                    issuedAt: action.issuedDate
+                    issuedAt: action.issuedDate,
                 })),
                 teacherId: teacher._id,
                 urgentNotificationsSent: true,
@@ -1862,7 +1932,7 @@ class TeacherService {
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
-            const { DisciplinaryAction } = await Promise.resolve().then(() => __importStar(require('../disciplinary/disciplinary.model')));
+            const { DisciplinaryAction } = await Promise.resolve().then(() => __importStar(require("../disciplinary/disciplinary.model")));
             const query = { teacherId: teacher._id };
             if (filters?.actionType)
                 query.actionType = filters.actionType;
@@ -1871,15 +1941,15 @@ class TeacherService {
             if (filters?.status)
                 query.status = filters.status;
             if (filters?.isRedWarrant !== undefined)
-                query.isRedWarrant = filters.isRedWarrant === 'true';
+                query.isRedWarrant = filters.isRedWarrant === "true";
             const actions = await DisciplinaryAction.find(query)
                 .populate({
-                path: 'studentId',
-                select: 'userId rollNumber grade section',
+                path: "studentId",
+                select: "userId rollNumber grade section",
                 populate: {
-                    path: 'userId',
-                    select: 'firstName lastName'
-                }
+                    path: "userId",
+                    select: "firstName lastName",
+                },
             })
                 .sort({ issuedDate: -1 });
             const stats = await DisciplinaryAction.getDisciplinaryStats(teacher.schoolId.toString(), { teacherId: teacher._id });
@@ -1890,10 +1960,10 @@ class TeacherService {
                     const user = student?.userId;
                     return {
                         id: action._id,
-                        studentName: user ? `${user.firstName} ${user.lastName}` : 'N/A',
-                        studentRoll: student?.rollNumber || 'N/A',
-                        grade: student?.grade || 'N/A',
-                        section: student?.section || 'N/A',
+                        studentName: user ? `${user.firstName} ${user.lastName}` : "N/A",
+                        studentRoll: student?.rollNumber || "N/A",
+                        grade: student?.grade || "N/A",
+                        section: student?.section || "N/A",
                         actionType: action.actionType,
                         severity: action.severity,
                         category: action.category,
@@ -1908,8 +1978,12 @@ class TeacherService {
                         studentAcknowledged: action.studentAcknowledged,
                         followUpRequired: action.followUpRequired,
                         followUpDate: action.followUpDate,
-                        canAppeal: action.canAppeal ? action.canAppeal() : false,
-                        isOverdue: action.isOverdue ? action.isOverdue() : false,
+                        canAppeal: action.canAppeal
+                            ? action.canAppeal()
+                            : false,
+                        isOverdue: action.isOverdue
+                            ? action.isOverdue()
+                            : false,
                     };
                 }),
                 stats,
@@ -1927,7 +2001,7 @@ class TeacherService {
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
-            const { DisciplinaryAction } = await Promise.resolve().then(() => __importStar(require('../disciplinary/disciplinary.model')));
+            const { DisciplinaryAction } = await Promise.resolve().then(() => __importStar(require("../disciplinary/disciplinary.model")));
             const action = await DisciplinaryAction.findById(actionId);
             if (!action) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Disciplinary action not found");
@@ -1935,7 +2009,7 @@ class TeacherService {
             if (action.teacherId.toString() !== teacher._id.toString()) {
                 throw new AppError_1.AppError(http_status_1.default.FORBIDDEN, "You can only resolve your own disciplinary actions");
             }
-            action.status = 'resolved';
+            action.status = "resolved";
             action.resolvedDate = new Date();
             action.resolvedBy = teacher.userId;
             action.resolutionNotes = resolutionNotes;
@@ -1959,7 +2033,7 @@ class TeacherService {
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
-            const { DisciplinaryAction } = await Promise.resolve().then(() => __importStar(require('../disciplinary/disciplinary.model')));
+            const { DisciplinaryAction } = await Promise.resolve().then(() => __importStar(require("../disciplinary/disciplinary.model")));
             const action = await DisciplinaryAction.findById(actionId);
             if (!action) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Disciplinary action not found");
@@ -1967,7 +2041,8 @@ class TeacherService {
             if (action.teacherId.toString() !== teacher._id.toString()) {
                 throw new AppError_1.AppError(http_status_1.default.FORBIDDEN, "You can only comment on your own disciplinary actions");
             }
-            action.resolutionNotes = (action.resolutionNotes || '') + '\n\nFollow-up: ' + comment;
+            action.resolutionNotes =
+                (action.resolutionNotes || "") + "\n\nFollow-up: " + comment;
             action.followUpDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
             const updatedAction = await action.save();
             return {
@@ -1984,22 +2059,22 @@ class TeacherService {
     }
     async getStudentsByGrade(userId, grade, section) {
         try {
-            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate('schoolId');
+            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate("schoolId");
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
             const teacherSchedules = await schedule_model_1.Schedule.find({
                 schoolId: teacher.schoolId,
-                'periods.teacherId': teacher._id,
+                "periods.teacherId": teacher._id,
                 isActive: true,
             });
             const teacherGrades = new Set([
                 ...teacher.grades,
-                ...teacherSchedules.map(s => s.grade)
+                ...teacherSchedules.map((s) => s.grade),
             ]);
-            const hasGeneralAccess = teacher.designation === 'head_teacher' ||
-                teacher.designation === 'assistant_head_teacher' ||
-                teacher.designation === 'discipline_master' ||
+            const hasGeneralAccess = teacher.designation === "head_teacher" ||
+                teacher.designation === "assistant_head_teacher" ||
+                teacher.designation === "discipline_master" ||
                 teacherGrades.size > 0;
             if (!teacherGrades.has(grade) && !hasGeneralAccess) {
                 throw new AppError_1.AppError(http_status_1.default.FORBIDDEN, `You don't have permission to access Grade ${grade}`);
@@ -2016,17 +2091,17 @@ class TeacherService {
                 query.section = section;
             }
             const students = await student_model_1.Student.find(query)
-                .populate('userId', 'firstName lastName email phone')
+                .populate("userId", "firstName lastName email phone")
                 .populate({
-                path: 'parentId',
-                select: 'userId',
+                path: "parentId",
+                select: "userId",
                 populate: {
-                    path: 'userId',
-                    select: 'firstName lastName email phone'
-                }
+                    path: "userId",
+                    select: "firstName lastName email phone",
+                },
             })
                 .sort({ rollNumber: 1 });
-            const { DisciplinaryAction } = await Promise.resolve().then(() => __importStar(require('../disciplinary/disciplinary.model')));
+            const { DisciplinaryAction } = await Promise.resolve().then(() => __importStar(require("../disciplinary/disciplinary.model")));
             const studentsWithStats = await Promise.all(students.map(async (student) => {
                 const disciplinaryHistory = await DisciplinaryAction.getStudentDisciplinaryHistory(student._id.toString());
                 const user = student.userId;
@@ -2035,52 +2110,63 @@ class TeacherService {
                 return {
                     id: student._id,
                     studentId: student.studentId,
-                    name: user ? `${user.firstName} ${user.lastName}` : 'N/A',
-                    email: user?.email || 'N/A',
-                    phone: user?.phone || 'N/A',
+                    name: user ? `${user.firstName} ${user.lastName}` : "N/A",
+                    email: user?.email || "N/A",
+                    phone: user?.phone || "N/A",
                     rollNumber: student.rollNumber,
                     grade: student.grade,
                     section: student.section,
                     admissionDate: student.admissionDate,
                     bloodGroup: student.bloodGroup,
-                    parentInfo: parent ? {
-                        name: parentUser ? `${parentUser.firstName} ${parentUser.lastName}` : 'N/A',
-                        email: parentUser?.email || 'N/A',
-                        phone: parentUser?.phone || 'N/A',
-                    } : null,
+                    parentInfo: parent
+                        ? {
+                            name: parentUser
+                                ? `${parentUser.firstName} ${parentUser.lastName}`
+                                : "N/A",
+                            email: parentUser?.email || "N/A",
+                            phone: parentUser?.phone || "N/A",
+                        }
+                        : null,
                     disciplinaryHistory: {
                         totalActions: disciplinaryHistory.totalActions,
                         activeWarnings: disciplinaryHistory.activeActions,
                         totalPoints: disciplinaryHistory.totalPoints,
                         redWarrants: disciplinaryHistory.redWarrants,
                         lastActionDate: disciplinaryHistory.recentActions[0]?.issuedDate || null,
-                        riskLevel: disciplinaryHistory.totalPoints > 40 ? 'high' :
-                            disciplinaryHistory.totalPoints > 20 ? 'medium' : 'low'
+                        riskLevel: disciplinaryHistory.totalPoints > 40
+                            ? "high"
+                            : disciplinaryHistory.totalPoints > 20
+                                ? "medium"
+                                : "low",
                     },
                     hasPhotos: false,
                 };
             }));
             const classStats = {
                 totalStudents: students.length,
-                studentsWithDisciplinaryActions: studentsWithStats.filter(s => s.disciplinaryHistory.totalActions > 0).length,
-                studentsWithActiveWarnings: studentsWithStats.filter(s => s.disciplinaryHistory.activeWarnings > 0).length,
-                studentsWithRedWarrants: studentsWithStats.filter(s => s.disciplinaryHistory.redWarrants > 0).length,
-                highRiskStudents: studentsWithStats.filter(s => s.disciplinaryHistory.riskLevel === 'high').length,
+                studentsWithDisciplinaryActions: studentsWithStats.filter((s) => s.disciplinaryHistory.totalActions > 0).length,
+                studentsWithActiveWarnings: studentsWithStats.filter((s) => s.disciplinaryHistory.activeWarnings > 0).length,
+                studentsWithRedWarrants: studentsWithStats.filter((s) => s.disciplinaryHistory.redWarrants > 0).length,
+                highRiskStudents: studentsWithStats.filter((s) => s.disciplinaryHistory.riskLevel === "high").length,
                 averageDisciplinaryPoints: studentsWithStats.reduce((sum, s) => sum + s.disciplinaryHistory.totalPoints, 0) / students.length,
             };
             return {
                 teacherInfo: {
                     id: teacher._id,
                     teacherId: teacher.teacherId,
-                    name: teacher.userId ? `${teacher.userId.firstName} ${teacher.userId.lastName}` : 'N/A',
+                    name: teacher.userId
+                        ? `${teacher.userId.firstName} ${teacher.userId.lastName}`
+                        : "N/A",
                     subjects: teacher.subjects,
                     grades: teacher.grades,
                     sections: teacher.sections,
                 },
                 classInfo: {
                     grade,
-                    section: section || 'All Sections',
-                    className: section ? `Grade ${grade} - Section ${section}` : `Grade ${grade} - All Sections`,
+                    section: section || "All Sections",
+                    className: section
+                        ? `Grade ${grade} - Section ${section}`
+                        : `Grade ${grade} - All Sections`,
                 },
                 students: studentsWithStats,
                 stats: classStats,
@@ -2096,36 +2182,36 @@ class TeacherService {
     }
     async getMyGradingTasks(userId) {
         try {
-            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate('schoolId');
+            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate("schoolId");
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
             const now = new Date();
             const currentAcademicYear = `${now.getFullYear()}-${now.getFullYear() + 1}`;
-            const { Exam } = await Promise.resolve().then(() => __importStar(require('../exam/exam.model')));
-            const { AcademicCalendar } = await Promise.resolve().then(() => __importStar(require('../academic-calendar/academic-calendar.model')));
-            const { Grade } = await Promise.resolve().then(() => __importStar(require('../grade/grade.model')));
+            const { Exam } = await Promise.resolve().then(() => __importStar(require("../exam/exam.model")));
+            const { AcademicCalendar } = await Promise.resolve().then(() => __importStar(require("../academic-calendar/academic-calendar.model")));
+            const { Grade } = await Promise.resolve().then(() => __importStar(require("../grade/grade.model")));
             const academicExams = [];
             const regularExams = await Exam.find({
                 schoolId: teacher.schoolId._id,
                 teacherId: teacher._id,
                 academicYear: currentAcademicYear,
                 examDate: { $lte: now },
-                status: { $in: ['completed', 'grading'] }
-            }).populate('subjectId', 'name code');
+                status: { $in: ["completed", "grading"] },
+            }).populate("subjectId", "name code");
             const gradingTasks = [];
             for (const exam of regularExams) {
                 const existingGrades = await Grade.countDocuments({
                     teacherId: teacher._id,
                     subjectId: exam.subjectId,
-                    gradeType: 'exam',
+                    gradeType: "exam",
                     title: exam.examName,
-                    academicYear: currentAcademicYear
+                    academicYear: currentAcademicYear,
                 });
                 const studentsQuery = {
                     schoolId: teacher.schoolId._id,
                     grade: exam.grade,
-                    isActive: true
+                    isActive: true,
                 };
                 if (exam.section) {
                     studentsQuery.section = exam.section;
@@ -2148,30 +2234,36 @@ class TeacherService {
                         totalStudents: students,
                         gradedStudents: existingGrades,
                         pendingGrades,
-                        gradingStatus: existingGrades === 0 ? 'not_started' :
-                            pendingGrades === 0 ? 'completed' : 'in_progress',
+                        gradingStatus: existingGrades === 0
+                            ? "not_started"
+                            : pendingGrades === 0
+                                ? "completed"
+                                : "in_progress",
                         deadline: new Date(exam.examDate.getTime() + 7 * 24 * 60 * 60 * 1000),
                         isOverdue: now > new Date(exam.examDate.getTime() + 7 * 24 * 60 * 60 * 1000),
-                        priority: now > new Date(exam.examDate.getTime() + 5 * 24 * 60 * 60 * 1000) ? 'high' : 'medium',
-                        source: 'exam',
+                        priority: now > new Date(exam.examDate.getTime() + 5 * 24 * 60 * 60 * 1000)
+                            ? "high"
+                            : "medium",
+                        source: "exam",
                         canGrade: true,
                     });
                 }
             }
             gradingTasks.sort((a, b) => {
-                if (a.priority === 'high' && b.priority !== 'high')
+                if (a.priority === "high" && b.priority !== "high")
                     return -1;
-                if (b.priority === 'high' && a.priority !== 'high')
+                if (b.priority === "high" && a.priority !== "high")
                     return 1;
                 return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
             });
             const stats = {
                 totalTasks: gradingTasks.length,
-                notStarted: gradingTasks.filter(t => t.gradingStatus === 'not_started').length,
-                inProgress: gradingTasks.filter(t => t.gradingStatus === 'in_progress').length,
-                completed: gradingTasks.filter(t => t.gradingStatus === 'completed').length,
-                overdue: gradingTasks.filter(t => t.isOverdue).length,
-                highPriority: gradingTasks.filter(t => t.priority === 'high').length,
+                notStarted: gradingTasks.filter((t) => t.gradingStatus === "not_started").length,
+                inProgress: gradingTasks.filter((t) => t.gradingStatus === "in_progress").length,
+                completed: gradingTasks.filter((t) => t.gradingStatus === "completed")
+                    .length,
+                overdue: gradingTasks.filter((t) => t.isOverdue).length,
+                highPriority: gradingTasks.filter((t) => t.priority === "high").length,
                 totalPendingGrades: gradingTasks.reduce((sum, t) => sum + t.pendingGrades, 0),
             };
             return {
@@ -2190,7 +2282,7 @@ class TeacherService {
     }
     async getExamGradingDetails(userId, examId, examItemId) {
         try {
-            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate('schoolId');
+            const teacher = await teacher_model_1.Teacher.findOne({ userId }).populate("schoolId");
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
@@ -2201,8 +2293,8 @@ class TeacherService {
                 throw new AppError_1.AppError(http_status_1.default.NOT_IMPLEMENTED, "Academic calendar exam grading temporarily disabled");
             }
             else {
-                const { Exam } = await Promise.resolve().then(() => __importStar(require('../exam/exam.model')));
-                const exam = await Exam.findById(examId).populate('subjectId');
+                const { Exam } = await Promise.resolve().then(() => __importStar(require("../exam/exam.model")));
+                const exam = await Exam.findById(examId).populate("subjectId");
                 if (!exam || exam.teacherId?.toString() !== teacher._id.toString()) {
                     throw new AppError_1.AppError(http_status_1.default.FORBIDDEN, "You are not assigned to grade this exam");
                 }
@@ -2221,7 +2313,7 @@ class TeacherService {
                 studentsQuery = {
                     schoolId: teacher.schoolId._id,
                     grade: exam.grade,
-                    isActive: true
+                    isActive: true,
                 };
                 if (exam.section) {
                     studentsQuery.section = exam.section;
@@ -2229,33 +2321,33 @@ class TeacherService {
                 subjectInfo = exam.subjectId;
             }
             const students = await student_model_1.Student.find(studentsQuery)
-                .populate('userId', 'firstName lastName')
+                .populate("userId", "firstName lastName")
                 .sort({ rollNumber: 1 });
-            const { Grade } = await Promise.resolve().then(() => __importStar(require('../grade/grade.model')));
+            const { Grade } = await Promise.resolve().then(() => __importStar(require("../grade/grade.model")));
             const existingGrades = await Grade.find({
                 teacherId: teacher._id,
                 subjectId: subjectInfo._id || subjectInfo,
-                gradeType: 'exam',
+                gradeType: "exam",
                 title: examDetails.examName,
-                academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)
+                academicYear: new Date().getFullYear() + "-" + (new Date().getFullYear() + 1),
             });
             const gradeMap = new Map();
-            existingGrades.forEach(grade => {
+            existingGrades.forEach((grade) => {
                 gradeMap.set(grade.studentId.toString(), {
                     marksObtained: grade.marksObtained,
                     percentage: grade.percentage,
                     grade: grade.grade,
                     remarks: grade.description,
-                    gradedDate: grade.gradedDate
+                    gradedDate: grade.gradedDate,
                 });
             });
-            const studentsForGrading = students.map(student => {
+            const studentsForGrading = students.map((student) => {
                 const existingGrade = gradeMap.get(student._id.toString());
                 const user = student.userId;
                 return {
                     id: student._id,
                     studentId: student.studentId,
-                    name: user ? `${user.firstName} ${user.lastName}` : 'N/A',
+                    name: user ? `${user.firstName} ${user.lastName}` : "N/A",
                     rollNumber: student.rollNumber,
                     grade: examDetails.grade,
                     section: student.section,
@@ -2267,19 +2359,23 @@ class TeacherService {
                 totalStudents: students.length,
                 gradedStudents: existingGrades.length,
                 pendingGrades: students.length - existingGrades.length,
-                averageMarks: existingGrades.length > 0 ?
-                    existingGrades.reduce((sum, g) => sum + g.marksObtained, 0) / existingGrades.length : 0,
-                passedStudents: existingGrades.filter(g => g.percentage >= ((examDetails.passingMarks / examDetails.totalMarks) * 100)).length,
-                failedStudents: existingGrades.filter(g => g.percentage < ((examDetails.passingMarks / examDetails.totalMarks) * 100)).length,
+                averageMarks: existingGrades.length > 0
+                    ? existingGrades.reduce((sum, g) => sum + g.marksObtained, 0) /
+                        existingGrades.length
+                    : 0,
+                passedStudents: existingGrades.filter((g) => g.percentage >=
+                    (examDetails.passingMarks / examDetails.totalMarks) * 100).length,
+                failedStudents: existingGrades.filter((g) => g.percentage <
+                    (examDetails.passingMarks / examDetails.totalMarks) * 100).length,
             };
             return {
                 examDetails: {
                     ...examDetails,
                     subject: {
                         id: subjectInfo._id || subjectInfo,
-                        name: subjectInfo.name || 'Unknown Subject',
-                        code: subjectInfo.code || 'N/A'
-                    }
+                        name: subjectInfo.name || "Unknown Subject",
+                        code: subjectInfo.code || "N/A",
+                    },
                 },
                 students: studentsForGrading,
                 gradingStats,
@@ -2288,7 +2384,7 @@ class TeacherService {
                     B: `${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100) + 10}-${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100) + 19}`,
                     C: `${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100)}-${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100) + 9}`,
                     D: `${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100) - 10}-${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100) - 1}`,
-                    F: `0-${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100) - 11}`
+                    F: `0-${Math.ceil((examDetails.passingMarks / examDetails.totalMarks) * 100) - 11}`,
                 },
                 canSubmitGrades: true,
             };
@@ -2305,13 +2401,13 @@ class TeacherService {
             if (!teacher) {
                 throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Teacher not found");
             }
-            const { Grade } = await Promise.resolve().then(() => __importStar(require('../grade/grade.model')));
-            const currentAcademicYear = new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
+            const { Grade } = await Promise.resolve().then(() => __importStar(require("../grade/grade.model")));
+            const currentAcademicYear = new Date().getFullYear() + "-" + (new Date().getFullYear() + 1);
             const { examId, examItemId, examName, subjectId, grades } = gradesData;
             if (examItemId) {
             }
             else {
-                const { Exam } = await Promise.resolve().then(() => __importStar(require('../exam/exam.model')));
+                const { Exam } = await Promise.resolve().then(() => __importStar(require("../exam/exam.model")));
                 const exam = await Exam.findById(examId);
                 if (!exam || exam.teacherId?.toString() !== teacher._id.toString()) {
                     throw new AppError_1.AppError(http_status_1.default.FORBIDDEN, "You are not assigned to grade this exam");
@@ -2325,9 +2421,9 @@ class TeacherService {
                         studentId: gradeData.studentId,
                         teacherId: teacher._id,
                         subjectId,
-                        gradeType: 'exam',
+                        gradeType: "exam",
                         title: examName,
-                        academicYear: currentAcademicYear
+                        academicYear: currentAcademicYear,
                     });
                     const gradeInfo = {
                         schoolId: teacher.schoolId,
@@ -2335,13 +2431,14 @@ class TeacherService {
                         teacherId: teacher._id,
                         subjectId,
                         academicYear: currentAcademicYear,
-                        semester: gradeData.semester || 'first',
-                        gradeType: 'exam',
+                        semester: gradeData.semester || "first",
+                        gradeType: "exam",
                         title: examName,
-                        description: gradeData.remarks || '',
+                        description: gradeData.remarks || "",
                         marksObtained: gradeData.obtainedMarks,
                         totalMarks: gradeData.totalMarks || 100,
-                        percentage: gradeData.percentage || ((gradeData.obtainedMarks / (gradeData.totalMarks || 100)) * 100),
+                        percentage: gradeData.percentage ||
+                            (gradeData.obtainedMarks / (gradeData.totalMarks || 100)) * 100,
                         grade: gradeData.grade,
                         weightage: gradeData.weightage || 100,
                         gradedDate: new Date(),
@@ -2351,23 +2448,27 @@ class TeacherService {
                         await existingGrade.save();
                         submittedGrades.push({
                             studentId: gradeData.studentId,
-                            action: 'updated',
-                            gradeId: existingGrade._id
+                            action: "updated",
+                            gradeId: existingGrade._id,
                         });
                     }
                     else {
                         const newGrade = await Grade.create(gradeInfo);
                         submittedGrades.push({
                             studentId: gradeData.studentId,
-                            action: 'created',
-                            gradeId: newGrade._id
+                            action: "created",
+                            gradeId: newGrade._id,
                         });
                     }
                     try {
-                        const { Notification } = await Promise.resolve().then(() => __importStar(require('../notification/notification.model')));
+                        const { Notification } = await Promise.resolve().then(() => __importStar(require("../notification/notification.model")));
                         const student = await student_model_1.Student.findById(gradeData.studentId).populate([
-                            { path: 'userId', select: 'firstName lastName' },
-                            { path: 'parentId', select: 'userId', populate: { path: 'userId', select: '_id' } }
+                            { path: "userId", select: "firstName lastName" },
+                            {
+                                path: "parentId",
+                                select: "userId",
+                                populate: { path: "userId", select: "_id" },
+                            },
                         ]);
                         if (student) {
                             const studentUser = student.userId;
@@ -2376,58 +2477,58 @@ class TeacherService {
                             await Notification.create({
                                 schoolId: teacher.schoolId,
                                 recipientId: studentUser._id,
-                                recipientType: 'student',
+                                recipientType: "student",
                                 senderId: teacher.userId,
-                                senderType: 'teacher',
-                                type: 'grade_published',
+                                senderType: "teacher",
+                                type: "grade_published",
                                 title: `Grade Published: ${examName}`,
                                 message: `Your exam grade has been published for ${examName}. Marks: ${gradeData.obtainedMarks}/${gradeData.totalMarks || 100} (${gradeData.grade})`,
-                                priority: 'medium',
+                                priority: "medium",
                                 relatedEntityId: examId,
-                                relatedEntityType: 'exam',
+                                relatedEntityType: "exam",
                                 metadata: {
-                                    subjectName: gradeData.subjectName || 'Unknown Subject',
+                                    subjectName: gradeData.subjectName || "Unknown Subject",
                                     examName,
                                     marks: gradeData.obtainedMarks,
                                     totalMarks: gradeData.totalMarks || 100,
                                     grade: gradeData.grade,
-                                    percentage: gradeData.percentage
-                                }
+                                    percentage: gradeData.percentage,
+                                },
                             });
                             if (parentInfo && parentUser) {
                                 await Notification.create({
                                     schoolId: teacher.schoolId,
                                     recipientId: parentUser._id,
-                                    recipientType: 'parent',
+                                    recipientType: "parent",
                                     senderId: teacher.userId,
-                                    senderType: 'teacher',
-                                    type: 'grade_published',
+                                    senderType: "teacher",
+                                    type: "grade_published",
                                     title: `Grade Published: ${studentUser.firstName}'s ${examName}`,
                                     message: `${studentUser.firstName}'s exam grade has been published for ${examName}. Marks: ${gradeData.obtainedMarks}/${gradeData.totalMarks || 100} (${gradeData.grade})`,
-                                    priority: 'medium',
+                                    priority: "medium",
                                     relatedEntityId: examId,
-                                    relatedEntityType: 'exam',
+                                    relatedEntityType: "exam",
                                     metadata: {
                                         studentName: `${studentUser.firstName} ${studentUser.lastName}`,
-                                        subjectName: gradeData.subjectName || 'Unknown Subject',
+                                        subjectName: gradeData.subjectName || "Unknown Subject",
                                         examName,
                                         marks: gradeData.obtainedMarks,
                                         totalMarks: gradeData.totalMarks || 100,
                                         grade: gradeData.grade,
-                                        percentage: gradeData.percentage
-                                    }
+                                        percentage: gradeData.percentage,
+                                    },
                                 });
                             }
                         }
                     }
                     catch (notificationError) {
-                        console.error('Failed to send grade notification:', notificationError);
+                        console.error("Failed to send grade notification:", notificationError);
                     }
                 }
                 catch (error) {
                     errors.push({
                         studentId: gradeData.studentId,
-                        error: error.message
+                        error: error.message,
                     });
                 }
             }
@@ -2435,8 +2536,8 @@ class TeacherService {
                 totalSubmissions: grades.length,
                 successful: submittedGrades.length,
                 failed: errors.length,
-                updated: submittedGrades.filter(g => g.action === 'updated').length,
-                created: submittedGrades.filter(g => g.action === 'created').length,
+                updated: submittedGrades.filter((g) => g.action === "updated").length,
+                created: submittedGrades.filter((g) => g.action === "created").length,
             };
             return {
                 success: errors.length === 0,
@@ -2449,9 +2550,9 @@ class TeacherService {
                 stats,
                 submittedGrades,
                 errors,
-                message: errors.length === 0 ?
-                    `Successfully submitted grades for ${stats.successful} students` :
-                    `Submitted ${stats.successful} grades with ${stats.failed} errors`,
+                message: errors.length === 0
+                    ? `Successfully submitted grades for ${stats.successful} students`
+                    : `Submitted ${stats.successful} grades with ${stats.failed} errors`,
             };
         }
         catch (error) {

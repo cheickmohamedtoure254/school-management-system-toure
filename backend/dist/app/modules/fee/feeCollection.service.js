@@ -16,25 +16,27 @@ class FeeCollectionService {
             studentId,
             schoolId: schoolId,
         })
-            .populate('userId', 'firstName lastName email phone')
+            .populate("userId", "firstName lastName email phone")
             .select("studentId grade rollNumber userId");
         if (!student) {
             throw new AppError_1.AppError(404, "Student not found");
         }
         const userId = student.userId;
-        const fullName = userId ? `${userId.firstName || ''} ${userId.lastName || ''}`.trim() : 'Unknown';
+        const fullName = userId
+            ? `${userId.firstName || ""} ${userId.lastName || ""}`.trim()
+            : "Unknown";
         return {
             _id: student._id,
             studentId: student.studentId,
             name: fullName,
             grade: student.grade,
             rollNumber: student.rollNumber,
-            parentContact: userId?.phone || '',
+            parentContact: userId?.phone || "",
         };
     }
     async getStudentFeeStatus(studentId, schoolId, academicYear) {
         const student = await Student.findById(studentId)
-            .populate('userId', 'firstName lastName email phone')
+            .populate("userId", "firstName lastName email phone")
             .select("studentId grade rollNumber userId schoolId");
         if (!student) {
             throw new AppError_1.AppError(404, "Student not found");
@@ -43,7 +45,9 @@ class FeeCollectionService {
             throw new AppError_1.AppError(403, "Access denied. Student belongs to a different school.");
         }
         const userId = student.userId;
-        const studentName = userId ? `${userId.firstName || ''} ${userId.lastName || ''}`.trim() : 'Unknown';
+        const studentName = userId
+            ? `${userId.firstName || ""} ${userId.lastName || ""}`.trim()
+            : "Unknown";
         const currentYear = academicYear || this.getCurrentAcademicYear();
         const latestFeeStructure = await feeStructure_model_1.default.findOne({
             school: schoolId,
@@ -62,7 +66,7 @@ class FeeCollectionService {
             const oneTimeFeeTotal = latestFeeStructure.feeComponents
                 .filter((c) => c.isOneTime)
                 .reduce((sum, c) => sum + c.amount, 0);
-            const totalYearlyFee = (latestFeeStructure.totalAmount * 12) + oneTimeFeeTotal;
+            const totalYearlyFee = latestFeeStructure.totalAmount * 12 + oneTimeFeeTotal;
             feeRecord = await studentFeeRecord_model_1.default.create({
                 student: student._id,
                 school: schoolId,
@@ -91,7 +95,7 @@ class FeeCollectionService {
                 const oneTimeFeeTotal = latestFeeStructure.feeComponents
                     .filter((c) => c.isOneTime)
                     .reduce((sum, c) => sum + c.amount, 0);
-                const totalYearlyFee = (latestFeeStructure.totalAmount * 12) + oneTimeFeeTotal;
+                const totalYearlyFee = latestFeeStructure.totalAmount * 12 + oneTimeFeeTotal;
                 const totalPaid = feeRecord.totalPaidAmount;
                 const newTotalDue = Math.max(0, totalYearlyFee - totalPaid);
                 const newMonthlyPayments = this.generateMonthlyPayments(latestFeeStructure.totalAmount, latestFeeStructure.dueDate, currentYear);
@@ -139,8 +143,7 @@ class FeeCollectionService {
             }
         }
         const now = new Date();
-        const upcomingDue = feeRecord.monthlyPayments.find((p) => (p.status === "pending" || p.status === "overdue") &&
-            !p.waived);
+        const upcomingDue = feeRecord.monthlyPayments.find((p) => (p.status === "pending" || p.status === "overdue") && !p.waived);
         const recentTransactions = await feeTransaction_model_1.default.find({
             student: student._id,
             studentFeeRecord: feeRecord._id,
@@ -186,13 +189,17 @@ class FeeCollectionService {
         let totalOneTimeFeeAmount = 0;
         if (isFirstPayment && pendingOneTimeFees.length > 0) {
             totalOneTimeFeeAmount = pendingOneTimeFees.reduce((sum, f) => sum + (f.dueAmount - f.paidAmount), 0);
-            warnings.push(`First payment must include ₹${totalOneTimeFeeAmount} one-time fees (${pendingOneTimeFees.map((f) => f.feeType).join(", ")})`);
+            warnings.push(`First payment must include ₹${totalOneTimeFeeAmount} one-time fees (${pendingOneTimeFees
+                .map((f) => f.feeType)
+                .join(", ")})`);
         }
-        const lateFeeAmount = includeLateFee ? (monthlyPayment.lateFee || 0) : 0;
+        const lateFeeAmount = includeLateFee ? monthlyPayment.lateFee || 0 : 0;
         const monthlyExpectedAmount = monthlyPayment.dueAmount - monthlyPayment.paidAmount + lateFeeAmount;
         const totalExpectedAmount = monthlyExpectedAmount + totalOneTimeFeeAmount;
         if (amount > totalExpectedAmount) {
-            warnings.push(`Amount exceeds due amount. Due: ₹${totalExpectedAmount} (Monthly: ₹${monthlyExpectedAmount}${totalOneTimeFeeAmount > 0 ? ` + One-time: ₹${totalOneTimeFeeAmount}` : ''}), Received: ₹${amount}`);
+            warnings.push(`Amount exceeds due amount. Due: ₹${totalExpectedAmount} (Monthly: ₹${monthlyExpectedAmount}${totalOneTimeFeeAmount > 0
+                ? ` + One-time: ₹${totalOneTimeFeeAmount}`
+                : ""}), Received: ₹${amount}`);
         }
         if (amount < totalExpectedAmount) {
             if (isFirstPayment && amount < totalOneTimeFeeAmount) {
@@ -204,7 +211,8 @@ class FeeCollectionService {
         }
         const now = new Date();
         if (monthlyPayment.dueDate < now && monthlyPayment.status === "pending") {
-            warnings.push(`Payment is overdue by ${Math.floor((now.getTime() - monthlyPayment.dueDate.getTime()) / (1000 * 60 * 60 * 24))} days`);
+            warnings.push(`Payment is overdue by ${Math.floor((now.getTime() - monthlyPayment.dueDate.getTime()) /
+                (1000 * 60 * 60 * 24))} days`);
         }
         const previousMonths = status.feeRecord.monthlyPayments.filter((p) => p.month < month && p.status !== "paid" && !p.waived);
         if (previousMonths.length > 0) {
@@ -261,7 +269,10 @@ class FeeCollectionService {
                 oneTimeFee.paidDate = new Date();
                 oneTimeFee.status = fee_interface_1.PaymentStatus.PAID;
                 const oneTimeTxn = await feeTransaction_model_1.default.create({
-                    transactionId: `TXN-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`,
+                    transactionId: `TXN-${Date.now()}-${Math.random()
+                        .toString(36)
+                        .substring(7)
+                        .toUpperCase()}`,
                     student: status.student._id,
                     studentFeeRecord: status.feeRecord._id,
                     school: data.schoolId,
@@ -280,11 +291,14 @@ class FeeCollectionService {
                 });
                 oneTimeFeeTransactions.push(oneTimeTxn);
             }
-            status.feeRecord.markModified('oneTimeFees');
+            status.feeRecord.markModified("oneTimeFees");
             await status.feeRecord.save();
         }
         const transaction = await feeTransaction_model_1.default.create({
-            transactionId: `TXN-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`,
+            transactionId: `TXN-${Date.now()}-${Math.random()
+                .toString(36)
+                .substring(7)
+                .toUpperCase()}`,
             student: status.student._id,
             studentFeeRecord: status.feeRecord._id,
             school: data.schoolId,
@@ -293,9 +307,10 @@ class FeeCollectionService {
             paymentMethod: data.paymentMethod,
             month: data.month,
             collectedBy: data.collectedBy,
-            remarks: data.remarks || (isFirstPayment && totalOneTimeFeeAmount > 0
-                ? `First payment including ₹${totalOneTimeFeeAmount} one-time fees`
-                : undefined),
+            remarks: data.remarks ||
+                (isFirstPayment && totalOneTimeFeeAmount > 0
+                    ? `First payment including ₹${totalOneTimeFeeAmount} one-time fees`
+                    : undefined),
             status: "completed",
             auditLog: {
                 ipAddress: data.auditInfo?.ipAddress,
@@ -324,14 +339,16 @@ class FeeCollectionService {
             select: "studentId grade section rollNumber userId",
             populate: {
                 path: "userId",
-                select: "firstName lastName email phone"
-            }
+                select: "firstName lastName email phone",
+            },
         })
             .sort({ createdAt: -1 })
             .lean();
         return transactions.map((t) => {
             const userId = t.student?.userId;
-            const studentName = userId ? `${userId.firstName || ''} ${userId.lastName || ''}`.trim() : 'Unknown';
+            const studentName = userId
+                ? `${userId.firstName || ""} ${userId.lastName || ""}`.trim()
+                : "Unknown";
             return {
                 _id: t._id,
                 transactionId: t.transactionId,
@@ -441,7 +458,7 @@ class FeeCollectionService {
         const defaultersCount = await studentFeeRecord_model_1.default.countDocuments({
             school: schoolObjectId,
             academicYear: this.getCurrentAcademicYear(),
-            "monthlyPayments": {
+            monthlyPayments: {
                 $elemMatch: {
                     status: "overdue",
                     waived: false,
@@ -458,8 +475,8 @@ class FeeCollectionService {
             select: "studentId grade section rollNumber userId",
             populate: {
                 path: "userId",
-                select: "firstName lastName email phone"
-            }
+                select: "firstName lastName email phone",
+            },
         })
             .sort({ createdAt: -1 })
             .limit(10);
@@ -525,37 +542,136 @@ class FeeCollectionService {
                         $sum: {
                             $cond: [
                                 { $gt: ["$structure.tuitionFee", 0] },
-                                { $multiply: ["$monthlyPayments.paidAmount", { $divide: ["$structure.tuitionFee", { $add: ["$structure.tuitionFee", "$structure.computerFee", "$structure.examFee", "$structure.sportsFee", "$structure.libraryFee", "$structure.transportFee", "$structure.otherFees"] }] }] },
-                                0
-                            ]
-                        }
+                                {
+                                    $multiply: [
+                                        "$monthlyPayments.paidAmount",
+                                        {
+                                            $divide: [
+                                                "$structure.tuitionFee",
+                                                {
+                                                    $add: [
+                                                        "$structure.tuitionFee",
+                                                        "$structure.computerFee",
+                                                        "$structure.examFee",
+                                                        "$structure.sportsFee",
+                                                        "$structure.libraryFee",
+                                                        "$structure.transportFee",
+                                                        "$structure.otherFees",
+                                                    ],
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                                0,
+                            ],
+                        },
                     },
                     examFee: {
                         $sum: {
                             $cond: [
                                 { $gt: ["$structure.examFee", 0] },
-                                { $multiply: ["$monthlyPayments.paidAmount", { $divide: ["$structure.examFee", { $add: ["$structure.tuitionFee", "$structure.computerFee", "$structure.examFee", "$structure.sportsFee", "$structure.libraryFee", "$structure.transportFee", "$structure.otherFees"] }] }] },
-                                0
-                            ]
-                        }
+                                {
+                                    $multiply: [
+                                        "$monthlyPayments.paidAmount",
+                                        {
+                                            $divide: [
+                                                "$structure.examFee",
+                                                {
+                                                    $add: [
+                                                        "$structure.tuitionFee",
+                                                        "$structure.computerFee",
+                                                        "$structure.examFee",
+                                                        "$structure.sportsFee",
+                                                        "$structure.libraryFee",
+                                                        "$structure.transportFee",
+                                                        "$structure.otherFees",
+                                                    ],
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                                0,
+                            ],
+                        },
                     },
                     transportFee: {
                         $sum: {
                             $cond: [
                                 { $gt: ["$structure.transportFee", 0] },
-                                { $multiply: ["$monthlyPayments.paidAmount", { $divide: ["$structure.transportFee", { $add: ["$structure.tuitionFee", "$structure.computerFee", "$structure.examFee", "$structure.sportsFee", "$structure.libraryFee", "$structure.transportFee", "$structure.otherFees"] }] }] },
-                                0
-                            ]
-                        }
+                                {
+                                    $multiply: [
+                                        "$monthlyPayments.paidAmount",
+                                        {
+                                            $divide: [
+                                                "$structure.transportFee",
+                                                {
+                                                    $add: [
+                                                        "$structure.tuitionFee",
+                                                        "$structure.computerFee",
+                                                        "$structure.examFee",
+                                                        "$structure.sportsFee",
+                                                        "$structure.libraryFee",
+                                                        "$structure.transportFee",
+                                                        "$structure.otherFees",
+                                                    ],
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                                0,
+                            ],
+                        },
                     },
                     otherFees: {
                         $sum: {
                             $cond: [
-                                { $gt: [{ $add: ["$structure.computerFee", "$structure.sportsFee", "$structure.libraryFee", "$structure.otherFees"] }, 0] },
-                                { $multiply: ["$monthlyPayments.paidAmount", { $divide: [{ $add: ["$structure.computerFee", "$structure.sportsFee", "$structure.libraryFee", "$structure.otherFees"] }, { $add: ["$structure.tuitionFee", "$structure.computerFee", "$structure.examFee", "$structure.sportsFee", "$structure.libraryFee", "$structure.transportFee", "$structure.otherFees"] }] }] },
-                                0
-                            ]
-                        }
+                                {
+                                    $gt: [
+                                        {
+                                            $add: [
+                                                "$structure.computerFee",
+                                                "$structure.sportsFee",
+                                                "$structure.libraryFee",
+                                                "$structure.otherFees",
+                                            ],
+                                        },
+                                        0,
+                                    ],
+                                },
+                                {
+                                    $multiply: [
+                                        "$monthlyPayments.paidAmount",
+                                        {
+                                            $divide: [
+                                                {
+                                                    $add: [
+                                                        "$structure.computerFee",
+                                                        "$structure.sportsFee",
+                                                        "$structure.libraryFee",
+                                                        "$structure.otherFees",
+                                                    ],
+                                                },
+                                                {
+                                                    $add: [
+                                                        "$structure.tuitionFee",
+                                                        "$structure.computerFee",
+                                                        "$structure.examFee",
+                                                        "$structure.sportsFee",
+                                                        "$structure.libraryFee",
+                                                        "$structure.transportFee",
+                                                        "$structure.otherFees",
+                                                    ],
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                                0,
+                            ],
+                        },
                     },
                 },
             },
@@ -570,7 +686,9 @@ class FeeCollectionService {
             totalDefaulters: defaultersCount,
             recentTransactions: recentTransactions.map((t) => {
                 const userId = t.student?.userId;
-                const studentName = userId ? `${userId.firstName || ''} ${userId.lastName || ''}`.trim() : "Unknown";
+                const studentName = userId
+                    ? `${userId.firstName || ""} ${userId.lastName || ""}`.trim()
+                    : "Unknown";
                 return {
                     _id: t._id,
                     transactionId: t.transactionId,
@@ -598,7 +716,7 @@ class FeeCollectionService {
         if (section)
             query.section = section;
         const students = await Student.find(query)
-            .populate('userId', 'firstName lastName email phone')
+            .populate("userId", "firstName lastName email phone")
             .select("studentId grade section rollNumber userId")
             .sort({ grade: 1, section: 1, rollNumber: 1 })
             .lean();
@@ -620,7 +738,7 @@ class FeeCollectionService {
                         const oneTimeFeeTotal = latestFeeStructure.feeComponents
                             .filter((c) => c.isOneTime)
                             .reduce((sum, c) => sum + c.amount, 0);
-                        const totalYearlyFee = (latestFeeStructure.totalAmount * 12) + oneTimeFeeTotal;
+                        const totalYearlyFee = latestFeeStructure.totalAmount * 12 + oneTimeFeeTotal;
                         feeRecord = await studentFeeRecord_model_1.default.create({
                             student: student._id,
                             school: schoolId,
@@ -647,7 +765,9 @@ class FeeCollectionService {
                 }
             }
             const userId = student.userId;
-            const fullName = userId ? `${userId.firstName || ''} ${userId.lastName || ''}`.trim() : 'Unknown';
+            const fullName = userId
+                ? `${userId.firstName || ""} ${userId.lastName || ""}`.trim()
+                : "Unknown";
             let calculatedTotalPaid = 0;
             let calculatedTotalDue = 0;
             if (feeRecord) {
@@ -663,14 +783,16 @@ class FeeCollectionService {
                 grade: student.grade,
                 section: student.section,
                 rollNumber: student.rollNumber,
-                parentContact: userId?.phone || '',
-                feeStatus: feeRecord ? {
-                    totalFeeAmount: feeRecord.totalFeeAmount,
-                    totalPaidAmount: calculatedTotalPaid,
-                    totalDueAmount: calculatedTotalDue,
-                    status: feeRecord.status,
-                    pendingMonths: feeRecord.monthlyPayments.filter((p) => p.status === "pending" || p.status === "overdue").length,
-                } : null,
+                parentContact: userId?.phone || "",
+                feeStatus: feeRecord
+                    ? {
+                        totalFeeAmount: feeRecord.totalFeeAmount,
+                        totalPaidAmount: calculatedTotalPaid,
+                        totalDueAmount: calculatedTotalDue,
+                        status: feeRecord.status,
+                        pendingMonths: feeRecord.monthlyPayments.filter((p) => p.status === "pending" || p.status === "overdue").length,
+                    }
+                    : null,
             };
         }));
         return studentsWithFees;
@@ -681,7 +803,7 @@ class FeeCollectionService {
         const defaulters = await studentFeeRecord_model_1.default.find({
             school: schoolObjectId,
             academicYear: currentYear,
-            "monthlyPayments": {
+            monthlyPayments: {
                 $elemMatch: {
                     status: "overdue",
                     waived: false,
@@ -693,14 +815,16 @@ class FeeCollectionService {
             select: "studentId grade section rollNumber userId",
             populate: {
                 path: "userId",
-                select: "firstName lastName email phone"
-            }
+                select: "firstName lastName email phone",
+            },
         })
             .sort({ totalDueAmount: -1 })
             .lean();
         return defaulters.map((record) => {
             const userId = record.student?.userId;
-            const studentName = userId ? `${userId.firstName || ''} ${userId.lastName || ''}`.trim() : 'Unknown';
+            const studentName = userId
+                ? `${userId.firstName || ""} ${userId.lastName || ""}`.trim()
+                : "Unknown";
             const overdueMonths = record.monthlyPayments.filter((p) => p.status === "overdue" && !p.waived);
             return {
                 _id: record._id,
@@ -709,7 +833,7 @@ class FeeCollectionService {
                 grade: record.student?.grade,
                 section: record.student?.section,
                 rollNumber: record.student?.rollNumber,
-                parentContact: userId?.phone || '',
+                parentContact: userId?.phone || "",
                 totalDueAmount: record.totalDueAmount,
                 totalOverdue: overdueMonths.reduce((sum, m) => sum + m.dueAmount, 0),
                 overdueMonths: overdueMonths.length,
@@ -718,31 +842,39 @@ class FeeCollectionService {
             };
         });
     }
-    async getFinancialReports(schoolId, reportType = 'monthly', startDate, endDate) {
+    async getFinancialReports(schoolId, reportType = "monthly", startDate, endDate) {
         const schoolObjectId = new mongoose_1.Types.ObjectId(schoolId);
         const now = new Date();
         let start, end;
         switch (reportType) {
-            case 'daily':
+            case "daily":
                 start = startDate ? new Date(startDate) : new Date(now);
                 start.setHours(0, 0, 0, 0);
                 end = endDate ? new Date(endDate) : new Date(now);
                 end.setHours(23, 59, 59, 999);
                 break;
-            case 'weekly':
+            case "weekly":
                 start = startDate ? new Date(startDate) : new Date(now);
                 start.setDate(start.getDate() - 7);
                 start.setHours(0, 0, 0, 0);
                 end = endDate ? new Date(endDate) : new Date(now);
                 end.setHours(23, 59, 59, 999);
                 break;
-            case 'monthly':
-                start = startDate ? new Date(startDate) : new Date(now.getFullYear(), now.getMonth(), 1);
-                end = endDate ? new Date(endDate) : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+            case "monthly":
+                start = startDate
+                    ? new Date(startDate)
+                    : new Date(now.getFullYear(), now.getMonth(), 1);
+                end = endDate
+                    ? new Date(endDate)
+                    : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
                 break;
-            case 'yearly':
-                start = startDate ? new Date(startDate) : new Date(now.getFullYear(), 0, 1);
-                end = endDate ? new Date(endDate) : new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+            case "yearly":
+                start = startDate
+                    ? new Date(startDate)
+                    : new Date(now.getFullYear(), 0, 1);
+                end = endDate
+                    ? new Date(endDate)
+                    : new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
                 break;
             default:
                 start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -913,7 +1045,7 @@ class FeeCollectionService {
     generateMonthlyPayments(monthlyAmount, dueDate = 10, academicYear) {
         const payments = [];
         const startYear = parseInt(academicYear.split("-")[0]);
-        const validDueDate = (dueDate && dueDate >= 1 && dueDate <= 31) ? dueDate : 10;
+        const validDueDate = dueDate && dueDate >= 1 && dueDate <= 31 ? dueDate : 10;
         for (let i = 0; i < 12; i++) {
             const month = ((fee_interface_1.Month.APRIL + i - 1) % 12) + 1;
             const year = startYear + (month < fee_interface_1.Month.APRIL ? 1 : 0);
@@ -947,7 +1079,9 @@ class FeeCollectionService {
             throw new AppError_1.AppError(404, "Student fee record not found");
         }
         const oneTimeFeeIndex = feeRecord.oneTimeFees?.findIndex((fee) => fee.feeType === data.feeType && fee.status !== fee_interface_1.PaymentStatus.PAID);
-        if (oneTimeFeeIndex === undefined || oneTimeFeeIndex === -1 || !feeRecord.oneTimeFees) {
+        if (oneTimeFeeIndex === undefined ||
+            oneTimeFeeIndex === -1 ||
+            !feeRecord.oneTimeFees) {
             throw new AppError_1.AppError(404, `${data.feeType} fee not found or already paid`);
         }
         const oneTimeFee = feeRecord.oneTimeFees[oneTimeFeeIndex];
@@ -955,15 +1089,17 @@ class FeeCollectionService {
         if (data.amount > remainingAmount) {
             throw new AppError_1.AppError(400, `Payment amount (${data.amount}) exceeds remaining due amount (${remainingAmount})`);
         }
-        feeRecord.oneTimeFees[oneTimeFeeIndex].paidAmount = (feeRecord.oneTimeFees[oneTimeFeeIndex].paidAmount || 0) + data.amount;
-        if (feeRecord.oneTimeFees[oneTimeFeeIndex].paidAmount >= feeRecord.oneTimeFees[oneTimeFeeIndex].dueAmount) {
+        feeRecord.oneTimeFees[oneTimeFeeIndex].paidAmount =
+            (feeRecord.oneTimeFees[oneTimeFeeIndex].paidAmount || 0) + data.amount;
+        if (feeRecord.oneTimeFees[oneTimeFeeIndex].paidAmount >=
+            feeRecord.oneTimeFees[oneTimeFeeIndex].dueAmount) {
             feeRecord.oneTimeFees[oneTimeFeeIndex].status = fee_interface_1.PaymentStatus.PAID;
             feeRecord.oneTimeFees[oneTimeFeeIndex].paidDate = new Date();
         }
         else {
             feeRecord.oneTimeFees[oneTimeFeeIndex].status = fee_interface_1.PaymentStatus.PARTIAL;
         }
-        feeRecord.markModified('oneTimeFees');
+        feeRecord.markModified("oneTimeFees");
         feeRecord.totalPaidAmount += data.amount;
         feeRecord.totalDueAmount -= data.amount;
         if (feeRecord.totalDueAmount === 0) {
@@ -974,7 +1110,10 @@ class FeeCollectionService {
         }
         await feeRecord.save();
         const transaction = await feeTransaction_model_1.default.create({
-            transactionId: `TXN-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`,
+            transactionId: `TXN-${Date.now()}-${Math.random()
+                .toString(36)
+                .substring(7)
+                .toUpperCase()}`,
             student: student._id,
             studentFeeRecord: feeRecord._id,
             school: schoolObjectId,
@@ -1009,7 +1148,7 @@ class FeeCollectionService {
             studentId,
             schoolId: schoolId,
         })
-            .populate('userId', 'firstName lastName email phone')
+            .populate("userId", "firstName lastName email phone")
             .lean();
         if (!student) {
             throw new AppError_1.AppError(404, "Student not found");
@@ -1019,14 +1158,14 @@ class FeeCollectionService {
             school: schoolObjectId,
             academicYear: this.getCurrentAcademicYear(),
         })
-            .populate('feeStructure')
+            .populate("feeStructure")
             .lean();
         if (!feeRecord) {
             return {
                 student: {
                     _id: student._id,
                     studentId: student.studentId,
-                    name: `${student.userId?.firstName || ''} ${student.userId?.lastName || ''}`.trim(),
+                    name: `${student.userId?.firstName || ""} ${student.userId?.lastName || ""}`.trim(),
                     grade: student.grade,
                     rollNumber: student.rollNumber,
                 },
@@ -1037,22 +1176,22 @@ class FeeCollectionService {
                 monthlyDues: 0,
                 oneTimeDues: 0,
                 pendingMonths: 0,
-                status: 'pending',
+                status: "pending",
             };
         }
-        const pendingMonthlyPayments = feeRecord.monthlyPayments.filter((p) => p.status !== 'paid' && !p.waived);
+        const pendingMonthlyPayments = feeRecord.monthlyPayments.filter((p) => p.status !== "paid" && !p.waived);
         const monthlyDues = pendingMonthlyPayments.reduce((sum, p) => sum + (p.dueAmount - p.paidAmount), 0);
         const oneTimeDues = (feeRecord.oneTimeFees || [])
-            .filter((f) => f.status === 'pending' || f.status === 'partial')
+            .filter((f) => f.status === "pending" || f.status === "partial")
             .reduce((sum, f) => sum + (f.dueAmount - f.paidAmount), 0);
-        const admissionFee = (feeRecord.oneTimeFees || []).find((f) => f.feeType === 'admission');
+        const admissionFee = (feeRecord.oneTimeFees || []).find((f) => f.feeType === "admission");
         const monthlyPaid = feeRecord.monthlyPayments.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
         const oneTimePaid = (feeRecord.oneTimeFees || []).reduce((sum, f) => sum + (f.paidAmount || 0), 0);
         const calculatedTotalPaid = monthlyPaid + oneTimePaid;
         const calculatedTotalDue = feeRecord.totalFeeAmount - calculatedTotalPaid;
         const now = new Date();
         const upcomingPayments = feeRecord.monthlyPayments
-            .filter((p) => p.status !== 'paid' && !p.waived)
+            .filter((p) => p.status !== "paid" && !p.waived)
             .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
         const nextDue = upcomingPayments.length > 0 ? upcomingPayments[0] : null;
         const recentTransactions = await feeTransaction_model_1.default.find({
@@ -1068,10 +1207,10 @@ class FeeCollectionService {
             student: {
                 _id: student._id,
                 studentId: student.studentId,
-                name: `${student.userId?.firstName || ''} ${student.userId?.lastName || ''}`.trim(),
+                name: `${student.userId?.firstName || ""} ${student.userId?.lastName || ""}`.trim(),
                 grade: student.grade,
                 rollNumber: student.rollNumber,
-                parentContact: student.userId?.phone || '',
+                parentContact: student.userId?.phone || "",
             },
             hasFeeRecord: true,
             totalFeeAmount: feeRecord.totalFeeAmount,
@@ -1080,16 +1219,18 @@ class FeeCollectionService {
             monthlyDues,
             oneTimeDues,
             pendingMonths: pendingMonthlyPayments.length,
-            admissionPending: admissionFee && admissionFee.status !== 'paid',
+            admissionPending: admissionFee && admissionFee.status !== "paid",
             admissionFeeAmount: admissionFee?.dueAmount || 0,
             admissionFeePaid: admissionFee?.paidAmount || 0,
             status: feeRecord.status,
-            nextDue: nextDue ? {
-                month: nextDue.month,
-                amount: nextDue.dueAmount - nextDue.paidAmount,
-                dueDate: nextDue.dueDate,
-                isOverdue: new Date(nextDue.dueDate) < now,
-            } : null,
+            nextDue: nextDue
+                ? {
+                    month: nextDue.month,
+                    amount: nextDue.dueAmount - nextDue.paidAmount,
+                    dueDate: nextDue.dueDate,
+                    isOverdue: new Date(nextDue.dueDate) < now,
+                }
+                : null,
             monthlyPayments: feeRecord.monthlyPayments,
             oneTimeFees: feeRecord.oneTimeFees || [],
             recentTransactions: recentTransactions.map((t) => ({
@@ -1110,7 +1251,7 @@ class FeeCollectionService {
             schoolId: schoolId,
             isActive: true,
         })
-            .populate('userId', 'firstName lastName email phone')
+            .populate("userId", "firstName lastName email phone")
             .lean();
         if (children.length === 0) {
             return {
@@ -1129,7 +1270,7 @@ class FeeCollectionService {
                 return {
                     _id: child._id,
                     studentId: child.studentId,
-                    name: `${child.userId?.firstName || ''} ${child.userId?.lastName || ''}`.trim(),
+                    name: `${child.userId?.firstName || ""} ${child.userId?.lastName || ""}`.trim(),
                     grade: child.grade,
                     section: child.section,
                     totalFees: 0,
@@ -1138,20 +1279,20 @@ class FeeCollectionService {
                     pendingMonths: 0,
                     admissionPending: false,
                     admissionFee: 0,
-                    feeStatus: 'pending',
+                    feeStatus: "pending",
                     hasFeeRecord: false,
                 };
             }
-            const pendingMonthlyPayments = feeRecord.monthlyPayments.filter((p) => p.status !== 'paid' && !p.waived);
-            const admissionFee = (feeRecord.oneTimeFees || []).find((f) => f.feeType === 'admission');
+            const pendingMonthlyPayments = feeRecord.monthlyPayments.filter((p) => p.status !== "paid" && !p.waived);
+            const admissionFee = (feeRecord.oneTimeFees || []).find((f) => f.feeType === "admission");
             const upcomingPayments = feeRecord.monthlyPayments
-                .filter((p) => p.status !== 'paid' && !p.waived)
+                .filter((p) => p.status !== "paid" && !p.waived)
                 .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
             const nextDue = upcomingPayments.length > 0 ? upcomingPayments[0] : null;
             return {
                 _id: child._id,
                 studentId: child.studentId,
-                name: `${child.userId?.firstName || ''} ${child.userId?.lastName || ''}`.trim(),
+                name: `${child.userId?.firstName || ""} ${child.userId?.lastName || ""}`.trim(),
                 grade: child.grade,
                 section: child.section,
                 rollNumber: child.rollNumber,
@@ -1159,17 +1300,21 @@ class FeeCollectionService {
                 totalPaid: feeRecord.totalPaidAmount,
                 totalDue: feeRecord.totalDueAmount,
                 pendingMonths: pendingMonthlyPayments.length,
-                admissionPending: admissionFee && admissionFee.status !== 'paid',
+                admissionPending: admissionFee && admissionFee.status !== "paid",
                 admissionFee: admissionFee?.dueAmount || 0,
                 admissionFeePaid: admissionFee?.paidAmount || 0,
-                admissionFeeRemaining: admissionFee ? (admissionFee.dueAmount - admissionFee.paidAmount) : 0,
+                admissionFeeRemaining: admissionFee
+                    ? admissionFee.dueAmount - admissionFee.paidAmount
+                    : 0,
                 feeStatus: feeRecord.status,
                 hasFeeRecord: true,
-                nextDue: nextDue ? {
-                    month: nextDue.month,
-                    amount: nextDue.dueAmount - nextDue.paidAmount,
-                    dueDate: nextDue.dueDate,
-                } : null,
+                nextDue: nextDue
+                    ? {
+                        month: nextDue.month,
+                        amount: nextDue.dueAmount - nextDue.paidAmount,
+                        dueDate: nextDue.dueDate,
+                    }
+                    : null,
             };
         }));
         const totalDueAmount = childrenWithFees.reduce((sum, child) => sum + child.totalDue, 0);
