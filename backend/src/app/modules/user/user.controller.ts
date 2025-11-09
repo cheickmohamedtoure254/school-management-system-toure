@@ -3,7 +3,6 @@ import { Request, Response } from 'express';
 import { catchAsync } from '../../utils/catchAsync';
 import { userService } from './user.service';
 import { AuthenticatedRequest } from '../../middlewares/auth';
-import config from '@/app/config';
 
 const createUser = catchAsync(async (req: Request, res: Response) => {
   const user = await userService.createUser(req.body);
@@ -125,7 +124,7 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
 const login = catchAsync(async (req: Request, res: Response) => {
   const result = await userService.login(req.body);
 
-  const isCrossSite = config.node_env !== "development";
+  const isCrossSite = true
 
   res.cookie("token", result.accessToken, {
     httpOnly: true,
