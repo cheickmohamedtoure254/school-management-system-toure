@@ -1,0 +1,4 @@
+/*    /index.html   200
+
+# Optional: force HTTPS
+http://*    https://%s    301
